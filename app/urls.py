@@ -6,11 +6,17 @@ urlpatterns = [
     path("movies/create/", MovieCreateView.as_view()),
     path("movies/<int:pk>/", MovieDetailView.as_view()),
     path("movies/<int:movie_id>/showtimes/", ShowtimeListView.as_view()),
+    #
     path("showtimes/create/", ShowtimeCreateView.as_view()),
     path("showtimes/<int:pk>/", ShowtimeDetailView.as_view()),
     path("showtimes/<int:showtime_id>/seats/", AvailableSeatsView.as_view()),
+    #
+    path("seat-types/", SeatTypeListCreateView.as_view(), name="seat-type-list-create"),
+    path("seat-types/<int:pk>/", SeatTypeDetailView.as_view(), name="seat-type-detail"),
+    #
     path("seats/create/", SeatCreateView.as_view()),
     path("seats/<int:pk>/", SeatDetailView.as_view()),
+    #
     path("bookings/", BookingCreateView.as_view()),
     path("bookings/<int:pk>/", BookingDetailView.as_view()),
 ]

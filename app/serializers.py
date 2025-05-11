@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Movie, Showtime, Seat, Booking, BookingSeat
+from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
 
@@ -7,7 +7,7 @@ from django.db import transaction
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
-        fields = '__all__'
+        fields = "__all__"
 
 
 class ShowtimeSerializer(serializers.ModelSerializer):
@@ -15,19 +15,27 @@ class ShowtimeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Showtime
-        fields = '__all__'
+        fields = "__all__"
+
+
+class SeatTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SeatType
+        fields = "__all__"
 
 
 class SeatSerializer(serializers.ModelSerializer):
+    seat_type = SeatTypeSerializer(read_only=True)
+
     class Meta:
         model = Seat
-        fields = '__all__'
+        fields = "__all__"
 
 
 class BookingSeatSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingSeat
-        fields = ['seat_id']
+        fields = ["seat_id"]
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -35,36 +43,37 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['showtime', 'total_amount', 'seats']
+        fields = ["showtime", "total_amount", "seats"]
 
     def create(self, validated_data):
-        seats_data = validated_data.pop('seats')
-        user = self.context['request'].user
-        showtime = validated_data['showtime']
+        seats_data = validated_data.pop("seats")
+        user = self.context["request"].user
+        showtime = validated_data["showtime"]
         total = 0
 
         with transaction.atomic():
             # Tính tổng tiền
             for seat_data in seats_data:
-                seat = Seat.objects.get(id=seat_data['seat_id'])
+                seat = Seat.objects.get(id=seat_data["seat_id"])
                 extra = seat.seat_type.extra_price if seat.seat_type else 0
                 total += showtime.price + extra
 
-            validated_data['total_amount'] = total
+            validated_data["total_amount"] = total
             booking = Booking.objects.create(user=user, **validated_data)
 
             for seat_data in seats_data:
-                BookingSeat.objects.create(booking=booking, seat_id=seat_data['seat_id'])
+                BookingSeat.objects.create(
+                    booking=booking, seat_id=seat_data["seat_id"]
+                )
 
         return booking
 
-
     def update(self, instance, validated_data):
-        if instance.status in ['paid', 'cancelled']:
+        if instance.status in ["paid", "cancelled"]:
             raise ValidationError("Cannot modify a paid or cancelled booking.")
 
-        seats_data = validated_data.pop('seats', None)
-        showtime = validated_data.get('showtime', instance.showtime)
+        seats_data = validated_data.pop("seats", None)
+        showtime = validated_data.get("showtime", instance.showtime)
 
         with transaction.atomic():
             for attr, value in validated_data.items():
@@ -76,7 +85,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
                 total = 0
                 for seat_data in seats_data:
-                    seat = Seat.objects.get(id=seat_data['seat_id'])
+                    seat = Seat.objects.get(id=seat_data["seat_id"])
                     BookingSeat.objects.create(booking=instance, seat=seat)
                     extra = seat.seat_type.extra_price if seat.seat_type else 0
                     total += showtime.price + extra
@@ -85,4 +94,3 @@ class BookingSerializer(serializers.ModelSerializer):
 
             instance.save()
         return instance
-
