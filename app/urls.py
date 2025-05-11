@@ -1,9 +1,16 @@
 from django.urls import path
-from .views import MovieListView, ShowtimeListView, AvailableSeatsView, BookingCreateView
+from .views import *
 
 urlpatterns = [
-    path('movies/', MovieListView.as_view(), name='movie-list'),
-    path('movies/<int:movie_id>/showtimes/', ShowtimeListView.as_view(), name='movie-showtimes'),
-    path('showtimes/<int:showtime_id>/available-seats/', AvailableSeatsView.as_view(), name='available-seats'),
-    path('bookings/', BookingCreateView.as_view(), name='create-booking'),
+    path("movies/", MovieListView.as_view()),
+    path("movies/create/", MovieCreateView.as_view()),
+    path("movies/<int:pk>/", MovieDetailView.as_view()),
+    path("movies/<int:movie_id>/showtimes/", ShowtimeListView.as_view()),
+    path("showtimes/create/", ShowtimeCreateView.as_view()),
+    path("showtimes/<int:pk>/", ShowtimeDetailView.as_view()),
+    path("showtimes/<int:showtime_id>/seats/", AvailableSeatsView.as_view()),
+    path("seats/create/", SeatCreateView.as_view()),
+    path("seats/<int:pk>/", SeatDetailView.as_view()),
+    path("bookings/", BookingCreateView.as_view()),
+    path("bookings/<int:pk>/", BookingDetailView.as_view()),
 ]
