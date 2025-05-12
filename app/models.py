@@ -75,7 +75,6 @@ class BookingSeat(models.Model):
     class Meta:
         unique_together = ("booking", "seat")
 
-
 class Payment(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
     method = models.CharField(max_length=50)

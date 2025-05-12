@@ -1,8 +1,33 @@
 from rest_framework import serializers
-from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinema, Room
+from django.contrib.auth import get_user_model
 from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 from django.db import transaction
 
+from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinema, Room
+
+
+User = get_user_model()
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role']
+
+class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+    )
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'role']
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user
 
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
@@ -52,7 +77,10 @@ class BookingSeatSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    seats = BookingSeatSerializer(many=True, write_only=True)
+    seats = BookingSeatSerializer(many=True)
+    showtime = serializers.PrimaryKeyRelatedField(
+        queryset=Showtime.objects.all(), write_only=True
+    )
 
     class Meta:
         model = Booking
