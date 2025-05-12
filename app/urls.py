@@ -1,5 +1,10 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
 from .views import *
+
+router = DefaultRouter()
+router.register(r'rooms', RoomViewSet, basename='room')
+
 
 urlpatterns = [
     path("movies/", MovieListView.as_view()),
@@ -23,3 +28,5 @@ urlpatterns = [
     path("bookings/", BookingCreateView.as_view()),
     path("bookings/<int:pk>/", BookingDetailView.as_view()),
 ]
+
+urlpatterns += router.urls

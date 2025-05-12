@@ -1,5 +1,5 @@
 from rest_framework import generics, permissions
-from .models import Movie, Showtime, Seat, BookingSeat, Booking, SeatType, Cinema
+from .models import Movie, Showtime, Seat, BookingSeat, Booking, SeatType, Cinema, Room
 from .serializers import (
     MovieSerializer,
     ShowtimeSerializer,
@@ -7,6 +7,7 @@ from .serializers import (
     BookingSerializer,
     SeatTypeSerializer,
     CinemaSerializer,
+    RoomSerializer,
 )
 from rest_framework.response import Response
 from django.db.models import Q
@@ -42,6 +43,11 @@ class CinemaListCreateView(generics.ListCreateAPIView):
 class CinemaRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Cinema.objects.all()
     serializer_class = CinemaSerializer
+
+@extend_schema(tags=["Rooms"])  # Gắn tag cho tài liệu API
+class RoomViewSet(viewsets.ModelViewSet):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
 
 @extend_schema(tags=["Showtimes"])
 class ShowtimeListView(generics.ListAPIView):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinema
+from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinema, Room
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
 
@@ -9,10 +9,19 @@ class MovieSerializer(serializers.ModelSerializer):
         model = Movie
         fields = "__all__"
 
+
 class CinemaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cinema
-        fields = ['id', 'name', 'address', 'city']
+        fields = ["id", "name", "address", "city"]
+
+
+class RoomSerializer(serializers.ModelSerializer):
+    cinema = CinemaSerializer(read_only=True)
+    class Meta:
+        model = Room
+        fields = ["id", "cinema", "name", "total_seats"]
+
 
 class ShowtimeSerializer(serializers.ModelSerializer):
     movie = MovieSerializer(read_only=True)
