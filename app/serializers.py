@@ -66,6 +66,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+    def validate_new_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Mật khẩu phải dài ít nhất 8 ký tự.")
+        return value
 
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:

@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
+from rest_framework import status
 
 from drf_spectacular.utils import extend_schema
 
@@ -33,6 +34,7 @@ from .serializers import (
     RegisterSerializer,
     UserSerializer,
     EmailTokenObtainPairSerializer,
+    ChangePasswordSerializer,
 )
 
 
@@ -70,6 +72,29 @@ class UserView(APIView):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
+@extend_schema(tags=["Auth"])
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={200: dict, 400: dict}
+    )
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            old_password = serializer.validated_data['old_password']
+            new_password = serializer.validated_data['new_password']
+
+            if not user.check_password(old_password):
+                return Response({'error': 'Mật khẩu cũ không đúng.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+            return Response({'success': 'Mật khẩu đã được thay đổi.'}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @extend_schema(tags=["Auth"])
 class LogoutView(APIView):

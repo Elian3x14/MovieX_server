@@ -12,6 +12,7 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("activate/<uidb64>/<token>/", ActivateUserView.as_view(), name="activate"),
     path("login/", EmailLoginView.as_view(), name="token_obtain_pair"),
+    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("me/", UserView.as_view(), name="user-info"),
     path("logout/", LogoutView.as_view(), name="logout"),
