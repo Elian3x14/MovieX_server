@@ -4,6 +4,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import transaction
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.urls import reverse
+from django.conf import settings
+from django.core.mail import send_mail
 
 from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinema, Room
 
@@ -42,6 +48,21 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data["email"],
             password=validated_data["password"],
             role="user",  # Mặc định role là 'user'
+            is_active=False,  # Tài khoản chưa kích hoạt
+        )
+        # Tạo token xác thực
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}/"
+        
+        # Gửi mail
+        send_mail(
+            "Kích hoạt tài khoản",
+            f"Chào {user.username}, hãy nhấp vào liên kết sau để kích hoạt tài khoản:\n{activation_link}",
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
         )
         return user
 
