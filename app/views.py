@@ -1,11 +1,12 @@
 from rest_framework import generics, permissions
-from .models import Movie, Showtime, Seat, BookingSeat, Booking, SeatType
+from .models import Movie, Showtime, Seat, BookingSeat, Booking, SeatType, Cinema
 from .serializers import (
     MovieSerializer,
     ShowtimeSerializer,
     SeatSerializer,
     BookingSerializer,
     SeatTypeSerializer,
+    CinemaSerializer,
 )
 from rest_framework.response import Response
 from django.db.models import Q
@@ -23,15 +24,24 @@ class MovieListView(generics.ListAPIView):
 class MovieCreateView(generics.CreateAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-    permission_classes = [permissions.IsAdminUser]  # chỉ admin được tạo
+    # permission_classes = [permissions.IsAdminUser]  # chỉ admin được tạo
 
 
 @extend_schema(tags=["Movies"])
 class MovieDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-    permission_classes = [permissions.IsAdminUser]
+    # permission_classes = [permissions.IsAdminUser]
 
+@extend_schema(tags=["Cinemas"])
+class CinemaListCreateView(generics.ListCreateAPIView):
+    queryset = Cinema.objects.all()
+    serializer_class = CinemaSerializer
+
+@extend_schema(tags=["Cinemas"])
+class CinemaRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Cinema.objects.all()
+    serializer_class = CinemaSerializer
 
 @extend_schema(tags=["Showtimes"])
 class ShowtimeListView(generics.ListAPIView):
@@ -56,11 +66,12 @@ class ShowtimeDetailView(generics.RetrieveUpdateDestroyAPIView):
     # permission_classes = [permissions.IsAdminUser]
 
 
+@extend_schema(tags=["SeatTypes"])
 class SeatTypeListCreateView(generics.ListCreateAPIView):
     queryset = SeatType.objects.all()
     serializer_class = SeatTypeSerializer
 
-
+@extend_schema(tags=["SeatTypes"])
 class SeatTypeDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SeatType.objects.all()
     serializer_class = SeatTypeSerializer
@@ -78,29 +89,28 @@ class AvailableSeatsView(generics.ListAPIView):
 
         return Seat.objects.exclude(id__in=booked_seat_ids)
 
-
 @extend_schema(tags=["Seats"])
 class SeatCreateView(generics.CreateAPIView):
     queryset = Seat.objects.all()
     serializer_class = SeatSerializer
-    permission_classes = [permissions.IsAdminUser]
+    # permission_classes = [permissions.IsAdminUser]
 
 
 @extend_schema(tags=["Seats"])
 class SeatDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Seat.objects.all()
     serializer_class = SeatSerializer
-    permission_classes = [permissions.IsAdminUser]
+    # permission_classes = [permissions.IsAdminUser]
 
 
 @extend_schema(tags=["Bookings"])
 class BookingCreateView(generics.CreateAPIView):
     serializer_class = BookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
 
 @extend_schema(tags=["Bookings"])
 class BookingDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
