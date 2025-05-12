@@ -75,6 +75,18 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Mật khẩu phải dài ít nhất 8 ký tự.")
         return value
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField()
+
+    def validate_new_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Mật khẩu phải dài ít nhất 8 ký tự.")
+        return value
+        
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie

@@ -139,3 +139,5 @@ FRONTEND_URL = 'http://localhost:3000'  # URL của frontend (nếu có)
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@example.com'
+
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24  # 1 ngày (tính bằng giây)
