@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import transaction
 
 from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinema, Room
@@ -9,25 +10,41 @@ from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinem
 
 User = get_user_model()
 
+
+class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = User.EMAIL_FIELD
+
+    def validate(self, attrs):
+        # Map 'email' vào 'username' để tương thích với backend
+        attrs["username"] = attrs.get("email")
+        return super().validate(attrs)
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role']
+        fields = ["id", "username", "email", "role"]
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
+        required=True, validators=[UniqueValidator(queryset=User.objects.all())]
     )
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'role']
+        fields = ["username", "email", "password"]
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        user = User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            role="user",  # Mặc định role là 'user'
+        )
         return user
+
 
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,6 +60,7 @@ class CinemaSerializer(serializers.ModelSerializer):
 
 class RoomSerializer(serializers.ModelSerializer):
     cinema = CinemaSerializer(read_only=True)
+
     class Meta:
         model = Room
         fields = ["id", "cinema", "name", "total_seats"]
@@ -136,9 +154,10 @@ class BookingSerializer(serializers.ModelSerializer):
             instance.save()
         return instance
 
+
 class BookingSeatSerializer(serializers.ModelSerializer):
     seat = SeatSerializer(read_only=True)
+
     class Meta:
         model = BookingSeat
-        fields = ['id', 'booking', 'seat']
-
+        fields = ["id", "booking", "seat"]

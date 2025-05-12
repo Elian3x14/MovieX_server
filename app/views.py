@@ -3,7 +3,7 @@ from django.db.models import Q
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from drf_spectacular.utils import extend_schema
@@ -30,6 +30,7 @@ from .serializers import (
     BookingSeatSerializer,
     RegisterSerializer,
     UserSerializer,
+    EmailTokenObtainPairSerializer,
 )
 
 
@@ -39,6 +40,9 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
+@extend_schema(tags=["Auth"])
+class EmailLoginView(TokenObtainPairView):
+    serializer_class = EmailTokenObtainPairSerializer
 
 @extend_schema(tags=["Auth"])
 class UserView(APIView):
@@ -47,6 +51,7 @@ class UserView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
 
 @extend_schema(tags=["Auth"])
 class LogoutView(APIView):
