@@ -107,3 +107,10 @@ class BookingSerializer(serializers.ModelSerializer):
 
             instance.save()
         return instance
+
+class BookingSeatSerializer(serializers.ModelSerializer):
+    seat = SeatSerializer(read_only=True)
+    class Meta:
+        model = BookingSeat
+        fields = ['id', 'booking', 'seat']
+

@@ -8,6 +8,7 @@ from .serializers import (
     SeatTypeSerializer,
     CinemaSerializer,
     RoomSerializer,
+    BookingSeatSerializer,
 )
 from rest_framework.response import Response
 from django.db.models import Q
@@ -120,3 +121,8 @@ class BookingDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
     # permission_classes = [permissions.IsAuthenticated]
+
+@extend_schema(tags=["BookingSeats"])
+class BookingSeatViewSet(viewsets.ModelViewSet):
+    queryset = BookingSeat.objects.all()
+    serializer_class = BookingSeatSerializer
