@@ -191,14 +191,14 @@ class MovieListView(generics.ListAPIView):
 class MovieCreateView(generics.CreateAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-    # permission_classes = [permissions.IsAdminUser]  # chỉ admin được tạo
+    permission_classes = [permissions.IsAdminUser]
 
 
 @extend_schema(tags=["Movies"])
 class MovieDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-    # permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAdminUser]
 
 
 @extend_schema(tags=["Cinemas"])
