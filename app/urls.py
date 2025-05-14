@@ -21,7 +21,12 @@ urlpatterns = [
     #
     path("movies/", MovieListView.as_view()),
     path("movies/create/", MovieCreateView.as_view()),
-    path("movies/<int:pk>/", MovieDetailView.as_view()),
+    path("movies/<int:id>/", MovieDetailView.as_view()),
+    path(
+        "movies/<int:id>/edit/",
+        MovieUpdateDeleteView.as_view(),
+        name="movie-edit-delete",
+    ),
     path("movies/<int:movie_id>/showtimes/", ShowtimeListView.as_view()),
     #
     path("cinemas/", CinemaListCreateView.as_view(), name="cinema-list-create"),

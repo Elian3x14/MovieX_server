@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class User(AbstractUser):
@@ -7,17 +8,31 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="user")
 
     email = models.EmailField(unique=True)
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']  # vẫn giữ username như trường phụ
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]  # vẫn giữ username như trường phụ
+
 
 class Movie(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    poster_url = models.URLField(blank=False)
+    trailer_url = models.URLField(blank=True)
+    backdrop_url = models.URLField(blank=True)
+    genres = models.CharField(max_length=100)  # VD: Action, Comedy, Drama
+    rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(10.0)],
+    )
     duration = models.PositiveIntegerField()  # in minutes
+    year = models.PositiveIntegerField()  # in YYYY format
+    director = models.CharField(max_length=100)
+    cast = models.TextField()  # VD: "Actor1, Actor2, Actor3"
     release_date = models.DateField()
-    genre = models.CharField(max_length=100)
-    poster_url = models.TextField(blank=True)
-    trailer_url = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.title
 
 
 class Cinema(models.Model):
@@ -34,9 +49,8 @@ class Room(models.Model):
 
 class SeatType(models.Model):
     name = models.CharField(max_length=50)  # VD: VIP, Standard, Couple
-    extra_price = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0
-    )
+    extra_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+
 
 class Seat(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
@@ -77,6 +91,7 @@ class BookingSeat(models.Model):
 
     class Meta:
         unique_together = ("booking", "seat")
+
 
 class Payment(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE)

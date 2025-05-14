@@ -185,7 +185,14 @@ class PasswordResetConfirmView(APIView):
 class MovieListView(generics.ListAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
+    permission_classes = [permissions.AllowAny]  # Không cần đăng nhập
 
+@extend_schema(tags=["Movies"])
+class MovieDetailView(generics.RetrieveAPIView):
+    queryset = Movie.objects.all()
+    serializer_class = MovieSerializer
+    permission_classes = [permissions.AllowAny]  # Không cần đăng nhập
+    lookup_field = "id"  # Mặc định là 'pk', bạn dùng 'id' nếu muốn rõ ràng hơn
 
 @extend_schema(tags=["Movies"])
 class MovieCreateView(generics.CreateAPIView):
@@ -195,7 +202,7 @@ class MovieCreateView(generics.CreateAPIView):
 
 
 @extend_schema(tags=["Movies"])
-class MovieDetailView(generics.RetrieveUpdateDestroyAPIView):
+class MovieUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
     permission_classes = [permissions.IsAdminUser]
