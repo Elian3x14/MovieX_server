@@ -1,15 +1,32 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.utils.translation import gettext_lazy as _
+
+# Regex cho số điện thoại Việt Nam: 10 số, bắt đầu bằng 03, 05, 07, 08, 09
+vietnam_phone_regex = RegexValidator(
+    regex=r"^(03|05|07|08|09)\d{8}$",
+    message="Số điện thoại không hợp lệ. Vui lòng nhập số 10 chữ số bắt đầu bằng 03, 05, 07, 08, hoặc 09.",
+)
 
 
 class User(AbstractUser):
     ROLE_CHOICES = (("user", "User"), ("admin", "Admin"))
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="user")
+    first_name = models.CharField(max_length=30, blank=True)
+    last_name = models.CharField(max_length=30, blank=True)
+    phone_number = models.CharField(
+        max_length=10,
+        unique=True,
+        validators=[vietnam_phone_regex],
+        verbose_name=_("phone number"),
+    )
 
     email = models.EmailField(unique=True)
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]  # vẫn giữ username như trường phụ
+    REQUIRED_FIELDS = [
+        "username",
+    ]
 
 
 class Movie(models.Model):

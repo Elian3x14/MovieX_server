@@ -40,12 +40,21 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["username", "email", "password"]
+        fields = [
+            "first_name",
+            "last_name",
+            "phone_number",
+            "email",
+            "password",
+        ]
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data["username"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            phone_number=validated_data["phone_number"],
             email=validated_data["email"],
+            username=validated_data["email"],  # Sử dụng email làm username
             password=validated_data["password"],
             role="user",  # Mặc định role là 'user'
             is_active=False,  # Tài khoản chưa kích hoạt
@@ -55,7 +64,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         token = default_token_generator.make_token(user)
 
         activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}/"
-        
+
         # Gửi mail
         send_mail(
             "Kích hoạt tài khoản",
@@ -66,6 +75,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
+
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
@@ -75,8 +85,10 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Mật khẩu phải dài ít nhất 8 ký tự.")
         return value
 
+
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
     token = serializers.CharField()
@@ -86,7 +98,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if len(value) < 8:
             raise serializers.ValidationError("Mật khẩu phải dài ít nhất 8 ký tự.")
         return value
-        
+
+
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
