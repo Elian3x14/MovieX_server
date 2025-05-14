@@ -8,8 +8,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
+from django.http import HttpResponseRedirect
 
 from drf_spectacular.utils import extend_schema
+from django.conf import settings
 
 from .models import (
     Movie,
@@ -47,6 +49,10 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
+    def perform_create(self, serializer):
+        # Truyền request vào context để sử dụng trong serializer
+        serializer.save(request=self.request)
+
 
 @extend_schema(tags=["Auth"])
 class ActivateUserView(APIView):
@@ -60,7 +66,10 @@ class ActivateUserView(APIView):
         if default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            return Response({"message": "Tài khoản đã được kích hoạt."}, status=200)
+            # Redirect đến trang xác thực thành công ở client
+            return HttpResponseRedirect(
+                f"http://{settings.FRONTEND_URL}/activate-success"
+            )
         else:
             return Response({"error": "Token không hợp lệ."}, status=400)
 
@@ -187,12 +196,14 @@ class MovieListView(generics.ListAPIView):
     serializer_class = MovieSerializer
     permission_classes = [permissions.AllowAny]  # Không cần đăng nhập
 
+
 @extend_schema(tags=["Movies"])
 class MovieDetailView(generics.RetrieveAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
     permission_classes = [permissions.AllowAny]  # Không cần đăng nhập
     lookup_field = "id"  # Mặc định là 'pk', bạn dùng 'id' nếu muốn rõ ràng hơn
+
 
 @extend_schema(tags=["Movies"])
 class MovieCreateView(generics.CreateAPIView):

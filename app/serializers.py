@@ -49,6 +49,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        request = self.context.get("request")
+
         user = User.objects.create_user(
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
@@ -63,7 +65,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
-        activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}/"
+        if request:
+            host = request.get_host()
+        else:
+            host = "localhost:8000"
+        
+        activation_link = f"http://{host}/api/activate/{uid}/{token}/"
 
         # Gửi mail
         send_mail(
