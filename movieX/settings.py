@@ -20,6 +20,12 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # Email
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@example.com")
 
+CORS_ALLOWED_ORIGINS = [
+    FRONTEND_URL,
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -31,6 +37,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
+    "corsheaders",
     "app",
 ]
 
@@ -42,6 +49,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # CORS middleware
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "movieX.urls"
