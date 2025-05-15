@@ -6,7 +6,7 @@ from app.management.commands.seeds import (
     seed_seats,
     seed_movies,
     seed_actors,
-    # seed_showtime,
+    seed_showtimes,
     seed_genres,
 )
 
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         movies = seed_movies()
         self.stdout.write(self.style.SUCCESS("Movie seeded"))
 
-        # seed_showtime(movie, room)
+        seed_showtimes()
         self.stdout.write(self.style.SUCCESS("Showtime seeded"))
 
         self.stdout.write(self.style.SUCCESS("Seeding completed successfully."))

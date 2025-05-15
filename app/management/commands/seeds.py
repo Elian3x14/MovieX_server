@@ -1,18 +1,6 @@
 from django.utils import timezone
 from datetime import timedelta
-from app.models import (
-    Cinema,
-    Room,
-    Seat,
-    SeatType,
-    Movie,
-    Showtime,
-    Booking,
-    BookingSeat,
-    Payment,
-    Genre,
-    Actor,
-)
+from app.models import *
 from django.contrib.auth import get_user_model
 import random
 from datetime import date, timedelta
@@ -192,6 +180,27 @@ def seed_movies():
         movie.actors.set(selected_actors)
 
         movie.save()
+
+
+def seed_showtimes():
+    rooms = Room.objects.all()
+    movies = Movie.objects.all()
+    cinemas = Cinema.objects.all()
+
+    for movie in movies:
+        for room in rooms:
+            # Tạo 5-10 showtime cho mỗi bộ phim
+            for _ in range(random.randint(5, 10)):
+                start_time = timezone.now() + timedelta(days=random.randint(0, 30))
+                end_time = start_time + timedelta(hours=random.randint(1, 3))
+                showtime = Showtime.objects.create(
+                    movie=movie,
+                    room=room,
+                    start_time=start_time,
+                    price=random.randint(50000, 200000),
+                    end_time=end_time,
+                )
+                showtime.save()
 
 
 """
