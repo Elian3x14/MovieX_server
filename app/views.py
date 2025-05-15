@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_decode
+from drf_spectacular.utils import OpenApiParameter
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
 from django.http import HttpResponseRedirect
@@ -25,10 +26,12 @@ class IsAdminOrReadOnly(BasePermission):
     Cho phép mọi người dùng GET, HEAD, OPTIONS.
     Nhưng chỉ admin mới được POST, PUT, DELETE.
     """
+
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return True
         return request.user and request.user.is_staff
+
 
 @extend_schema(tags=["Auth"])
 class RegisterView(generics.CreateAPIView):
@@ -43,6 +46,14 @@ class RegisterView(generics.CreateAPIView):
 
 @extend_schema(tags=["Auth"])
 class ActivateUserView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="uidb64", type=str, location=OpenApiParameter.PATH),
+            OpenApiParameter(name="token", type=str, location=OpenApiParameter.PATH),
+        ]
+    )
     def get(self, request, uidb64, token):
         try:
             uid = urlsafe_base64_decode(uidb64).decode()
@@ -69,6 +80,7 @@ class EmailLoginView(TokenObtainPairView):
 @extend_schema(tags=["Auth"])
 class UserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
 
     def get(self, request):
         serializer = UserSerializer(request.user)
@@ -105,7 +117,8 @@ class ChangePasswordView(APIView):
 @extend_schema(tags=["Auth"])
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
+    
+    @extend_schema(request=None, responses={204: None})
     def post(self, request):
         try:
             refresh_token = request.data["refresh"]
@@ -183,11 +196,13 @@ class ActorViewSet(viewsets.ModelViewSet):
     serializer_class = ActorSerializer
     permission_classes = [IsAdminOrReadOnly]
 
+
 @extend_schema(tags=["Genres"])
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
+
 
 @extend_schema(tags=["Movies"])
 class MovieListView(generics.ListAPIView):

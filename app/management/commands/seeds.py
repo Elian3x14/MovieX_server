@@ -58,6 +58,7 @@ def seed_actors():
 
 def seed_users():
     from django.contrib.auth import get_user_model
+
     User = get_user_model()
 
     # Xóa tất cả người dùng trước khi tạo mới
@@ -70,7 +71,7 @@ def seed_users():
             role="admin",
             phone_number="0900000001",
             first_name="Admin",
-            last_name="User"
+            last_name="User",
         )
 
     if not User.objects.filter(email="user@example.com").exists():
@@ -81,9 +82,8 @@ def seed_users():
             role="user",
             phone_number="0900000002",
             first_name="Normal",
-            last_name="User"
+            last_name="User",
         )
-
 
 
 def seed_seat_types():
@@ -125,9 +125,9 @@ def seed_movies():
         {
             "title": "Inception",
             "description": "A mind-bending thriller about dreams within dreams.",
-            "poster_url": "https://example.com/posters/inception.jpg",
-            "trailer_url": "https://youtube.com/watch?v=YoHD9XEInc0",
-            "backdrop_url": "https://example.com/backdrops/inception.jpg",
+            "poster_url": "https://m.media-amazon.com/images/M/MV5BMjExMjkwNTQ0Nl5BMl5BanBnXkFtZTcwNTY0OTk1Mw@@._V1_.jpg",
+            "trailer_url": "https://www.youtube.com/watch?v=JEv8W3pWqH0",
+            "backdrop_url": "https://images2.alphacoders.com/851/85182.jpg",
             "rating": 8.8,
             "duration": 148,
             "year": 2010,
@@ -138,9 +138,9 @@ def seed_movies():
         {
             "title": "Interstellar",
             "description": "Explorers travel through a wormhole in space.",
-            "poster_url": "https://example.com/posters/interstellar.jpg",
-            "trailer_url": "https://youtube.com/watch?v=zSWdZVtXT7E",
-            "backdrop_url": "https://example.com/backdrops/interstellar.jpg",
+            "poster_url": "https://m.media-amazon.com/images/M/MV5BYzdjMDAxZGItMjI2My00ODA1LTlkNzItOWFjMDU5ZDJlYWY3XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+            "trailer_url": "https://www.youtube.com/watch?v=zSWdZVtXT7E",
+            "backdrop_url": "https://images8.alphacoders.com/560/560736.jpg",
             "rating": 8.6,
             "duration": 169,
             "year": 2014,
@@ -151,9 +151,9 @@ def seed_movies():
         {
             "title": "The Matrix",
             "description": "A hacker discovers the world is a simulation.",
-            "poster_url": "https://example.com/posters/matrix.jpg",
+            "poster_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRfSjSWOCaw5dnDL2GT1zFd9RMCgUGw5Q2Cfg&s",
             "trailer_url": "https://youtube.com/watch?v=vKQi3bBA1y8",
-            "backdrop_url": "https://example.com/backdrops/matrix.jpg",
+            "backdrop_url": "https://www.wallpaperflare.com/static/794/952/936/the-matrix-matrix-movie-wallpaper.jpg",
             "rating": 8.7,
             "duration": 136,
             "year": 1999,
@@ -164,9 +164,9 @@ def seed_movies():
         {
             "title": "Avengers: Endgame",
             "description": "The Avengers assemble for a final battle.",
-            "poster_url": "https://example.com/posters/endgame.jpg",
+            "poster_url": "https://m.media-amazon.com/images/I/81pTbZF5KXL._AC_SL1500_.jpg",
             "trailer_url": "https://youtube.com/watch?v=TcMBFSGVi1c",
-            "backdrop_url": "https://example.com/backdrops/endgame.jpg",
+            "backdrop_url": "https://wallpapers.com/images/hd/avengers-endgame-superheroes-2ujw4a3pp2gh8xpf.jpg",
             "rating": 8.4,
             "duration": 181,
             "year": 2019,
@@ -174,6 +174,28 @@ def seed_movies():
             "release_date": date.today() - timedelta(days=365 * 5),
             "release_status": Movie.NOW_SHOWING,
         },
+        # Thêm các bộ phim khác ở đây
+    ]
+
+    for data in movies_data:
+        movie, _ = Movie.objects.get_or_create(
+            title=data["title"],
+            defaults={key: val for key, val in data.items() if key != "title"},
+        )
+        # Thêm 1-3 genres ngẫu nhiên
+        selected_genres = random.sample(genres, k=min(3, len(genres)))
+        movie.genres.set(selected_genres)
+
+        # Thêm 2-5 actors ngẫu nhiên
+        selected_actors = random.sample(actors, k=min(5, len(actors)))
+        movie.actors.set(selected_actors)
+
+        movie.save()
+
+
+"""
+
+        
         {
             "title": "Oppenheimer",
             "description": "The story of the atomic bomb creator.",
@@ -252,19 +274,4 @@ def seed_movies():
             "release_date": date.today() + timedelta(days=20),
             "release_status": Movie.COMING_SOON,
         },
-    ]
-
-    for data in movies_data:
-        movie, _ = Movie.objects.get_or_create(
-            title=data["title"],
-            defaults={key: val for key, val in data.items() if key != "title"},
-        )
-        # Thêm 1-3 genres ngẫu nhiên
-        selected_genres = random.sample(genres, k=min(3, len(genres)))
-        movie.genres.set(selected_genres)
-
-        # Thêm 2-5 actors ngẫu nhiên
-        selected_actors = random.sample(actors, k=min(5, len(actors)))
-        movie.actors.set(selected_actors)
-
-        movie.save()
+    """

@@ -160,12 +160,12 @@ class SeatSerializer(serializers.ModelSerializer):
         model = Seat
         fields = "__all__"
 
-
 class BookingSeatSerializer(serializers.ModelSerializer):
+    seat = SeatSerializer(read_only=True)
+
     class Meta:
         model = BookingSeat
-        fields = ["seat_id"]
-
+        fields = ["id", "booking", "seat"]
 
 class BookingSerializer(serializers.ModelSerializer):
     seats = BookingSeatSerializer(many=True)
@@ -228,9 +228,3 @@ class BookingSerializer(serializers.ModelSerializer):
         return instance
 
 
-class BookingSeatSerializer(serializers.ModelSerializer):
-    seat = SeatSerializer(read_only=True)
-
-    class Meta:
-        model = BookingSeat
-        fields = ["id", "booking", "seat"]
