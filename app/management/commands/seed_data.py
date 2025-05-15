@@ -5,10 +5,14 @@ from app.management.commands.seeds import (
     seed_cinema_and_room,
     seed_seats,
     seed_movies,
+    seed_actors,
+    # seed_showtime,
+    seed_genres,
 )
 
+
 class Command(BaseCommand):
-    help = 'Seed initial data'
+    help = "Seed initial data"
 
     def handle(self, *args, **kwargs):
         seed_users()
@@ -22,6 +26,12 @@ class Command(BaseCommand):
 
         seed_seats(room, vip, standard, couple)
         self.stdout.write(self.style.SUCCESS("Seats seeded"))
+
+        seed_actors()
+        self.stdout.write(self.style.SUCCESS("Actors seeded"))
+
+        seed_genres()
+        self.stdout.write(self.style.SUCCESS("Genres seeded"))
 
         movies = seed_movies()
         self.stdout.write(self.style.SUCCESS("Movie seeded"))

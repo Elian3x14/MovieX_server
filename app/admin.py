@@ -3,6 +3,9 @@ from .models import *
 
 
 # Register your models here.
+admin.site.register(User)
+admin.site.register(Actor)
+admin.site.register(Genre)
 admin.site.register(Movie)
 admin.site.register(Cinema)
 admin.site.register(Room)
@@ -12,5 +15,3 @@ admin.site.register(Showtime)
 admin.site.register(Booking)
 admin.site.register(BookingSeat)
 admin.site.register(Payment)
-admin.site.register(User)
-
