@@ -227,4 +227,10 @@ class BookingSerializer(serializers.ModelSerializer):
             instance.save()
         return instance
 
+class ReviewSerializer(serializers.ModelSerializer):
+    author = UserSerializer() 
 
+    class Meta:
+        model = Review
+        fields = ['id', 'author', 'rating', 'comment', 'date']
+        read_only_fields = ['id', 'author', 'date']

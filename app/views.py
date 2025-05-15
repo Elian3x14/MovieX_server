@@ -10,7 +10,7 @@ from drf_spectacular.utils import OpenApiParameter
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
 from django.http import HttpResponseRedirect
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import BasePermission,IsAuthenticatedOrReadOnly, SAFE_METHODS
 
 
 from drf_spectacular.utils import extend_schema
@@ -31,6 +31,17 @@ class IsAdminOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return request.user and request.user.is_staff
+
+class IsAuthorOrAdmin(BasePermission):
+    """
+    - GET: Ai cũng được
+    - PUT/DELETE: Chỉ người tạo review hoặc admin
+    """
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        return obj.author == request.user or request.user.is_staff
 
 
 @extend_schema(tags=["Auth"])
@@ -117,7 +128,7 @@ class ChangePasswordView(APIView):
 @extend_schema(tags=["Auth"])
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    
+
     @extend_schema(request=None, responses={204: None})
     def post(self, request):
         try:
@@ -330,3 +341,12 @@ class BookingDetailView(generics.RetrieveUpdateDestroyAPIView):
 class BookingSeatViewSet(viewsets.ModelViewSet):
     queryset = BookingSeat.objects.all()
     serializer_class = BookingSeatSerializer
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrAdmin]  # Ai cũng xem được, nhưng chỉ người tạo hoặc admin mới sửa/xóa được
+
+    def perform_create(self, serializer):
+        # Tự động gán author là user đang đăng nhập
+        serializer.save(author=self.request.user)
