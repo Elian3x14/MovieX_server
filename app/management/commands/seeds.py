@@ -118,6 +118,7 @@ def seed_seats(room, vip, standard, couple):
 
 
 def seed_movies():
+
     genres = list(Genre.objects.all())
     actors = list(Actor.objects.all())
 
