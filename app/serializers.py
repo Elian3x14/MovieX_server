@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.core.mail import send_mail
 
-from .models import Movie, Showtime, Seat, Booking, BookingSeat, SeatType, Cinema, Room
+from .models import *
 
 
 User = get_user_model()
@@ -106,8 +106,20 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError("Mật khẩu phải dài ít nhất 8 ký tự.")
         return value
 
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ["id", "name"]  
+
+class ActorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Actor
+        fields = ['id', 'name']
 
 class MovieSerializer(serializers.ModelSerializer):
+    actors = ActorSerializer(many=True, read_only=True)
+    genres = GenreSerializer(many=True, read_only=True)
+    
     class Meta:
         model = Movie
         fields = "__all__"
