@@ -3,45 +3,33 @@ from django.db.models import Q
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
 from django.http import HttpResponseRedirect
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+
 
 from drf_spectacular.utils import extend_schema
 from django.conf import settings
 
-from .models import (
-    Movie,
-    Showtime,
-    Seat,
-    BookingSeat,
-    Booking,
-    SeatType,
-    Cinema,
-    Room,
-    User,
-)
-from .serializers import (
-    MovieSerializer,
-    ShowtimeSerializer,
-    SeatSerializer,
-    BookingSerializer,
-    SeatTypeSerializer,
-    CinemaSerializer,
-    RoomSerializer,
-    BookingSeatSerializer,
-    RegisterSerializer,
-    UserSerializer,
-    EmailTokenObtainPairSerializer,
-    ChangePasswordSerializer,
-    PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer,
-)
+from .models import *
+from .serializers import *
 from django.core.mail import send_mail
 
+
+class IsAdminOrReadOnly(BasePermission):
+    """
+    Cho phép mọi người dùng GET, HEAD, OPTIONS.
+    Nhưng chỉ admin mới được POST, PUT, DELETE.
+    """
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user and request.user.is_staff
 
 @extend_schema(tags=["Auth"])
 class RegisterView(generics.CreateAPIView):
@@ -188,6 +176,13 @@ class PasswordResetConfirmView(APIView):
         user.set_password(new_password)
         user.save()
         return Response({"detail": "Mật khẩu đã được đặt lại thành công."})
+
+
+@extend_schema(tags=["Actors"])
+class ActorViewSet(ModelViewSet):
+    queryset = Actor.objects.all()
+    serializer_class = ActorSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 
 @extend_schema(tags=["Movies"])
