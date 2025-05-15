@@ -7,6 +7,7 @@ router = DefaultRouter()
 router.register(r"rooms", RoomViewSet, basename="room")
 router.register(r"booking-seats", BookingSeatViewSet, basename="booking-seat")
 router.register(r'actors', ActorViewSet)
+router.register(r'genres', GenreViewSet)
 
 urlpatterns = [
     #

@@ -3,7 +3,6 @@ from django.db.models import Q
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_decode
@@ -179,11 +178,16 @@ class PasswordResetConfirmView(APIView):
 
 
 @extend_schema(tags=["Actors"])
-class ActorViewSet(ModelViewSet):
+class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
     permission_classes = [IsAdminOrReadOnly]
 
+@extend_schema(tags=["Genres"])
+class GenreViewSet(viewsets.ModelViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 @extend_schema(tags=["Movies"])
 class MovieListView(generics.ListAPIView):
