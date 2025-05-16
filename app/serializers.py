@@ -156,6 +156,7 @@ class SeatTypeSerializer(serializers.ModelSerializer):
 
 class SeatSerializer(serializers.ModelSerializer):
     seat_type = SeatTypeSerializer(read_only=True)
+    is_booked = serializers.BooleanField()
 
     class Meta:
         model = Seat

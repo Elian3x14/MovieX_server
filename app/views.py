@@ -2,6 +2,7 @@ from django.db.models import Q
 
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -10,7 +11,11 @@ from drf_spectacular.utils import OpenApiParameter
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
 from django.http import HttpResponseRedirect
-from rest_framework.permissions import BasePermission,IsAuthenticatedOrReadOnly, SAFE_METHODS
+from rest_framework.permissions import (
+    BasePermission,
+    IsAuthenticatedOrReadOnly,
+    SAFE_METHODS,
+)
 
 
 from drf_spectacular.utils import extend_schema
@@ -31,6 +36,7 @@ class IsAdminOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return request.user and request.user.is_staff
+
 
 class IsAuthorOrAdmin(BasePermission):
     """
@@ -279,6 +285,38 @@ class ShowtimeCreateView(generics.CreateAPIView):
 
 
 @extend_schema(tags=["Showtimes"])
+class AvailableSeatsView(generics.ListAPIView):
+    serializer_class = SeatSerializer
+
+    def get_queryset(self):
+        showtime_id = self.kwargs["showtime_id"]
+
+        try:
+            showtime = Showtime.objects.select_related("room").get(id=showtime_id)
+        except Showtime.DoesNotExist:
+            return Seat.objects.none()
+
+        room = showtime.room
+
+        # Ghế đã được đặt
+        booked_seat_ids = set(
+            BookingSeat.objects.filter(
+                booking__showtime_id=showtime_id,
+                booking__status__in=["pending", "paid"],
+            ).values_list("seat_id", flat=True)
+        )
+
+        # Toàn bộ ghế trong phòng
+        all_seats = Seat.objects.filter(room=room)
+
+        # Gắn flag is_booked cho mỗi ghế
+        for seat in all_seats:
+            seat.is_booked = seat.id in booked_seat_ids
+
+        return all_seats
+
+
+@extend_schema(tags=["Showtimes"])
 class ShowtimeDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Showtime.objects.all()
     serializer_class = ShowtimeSerializer
@@ -295,19 +333,6 @@ class SeatTypeListCreateView(generics.ListCreateAPIView):
 class SeatTypeDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SeatType.objects.all()
     serializer_class = SeatTypeSerializer
-
-
-@extend_schema(tags=["Seats"])
-class AvailableSeatsView(generics.ListAPIView):
-    serializer_class = SeatSerializer
-
-    def get_queryset(self):
-        showtime_id = self.kwargs["showtime_id"]
-        booked_seat_ids = BookingSeat.objects.filter(
-            booking__showtime_id=showtime_id, booking__status__in=["pending", "paid"]
-        ).values_list("seat_id", flat=True)
-
-        return Seat.objects.exclude(id__in=booked_seat_ids)
 
 
 @extend_schema(tags=["Seats"])
@@ -342,10 +367,14 @@ class BookingSeatViewSet(viewsets.ModelViewSet):
     queryset = BookingSeat.objects.all()
     serializer_class = BookingSeatSerializer
 
+
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrAdmin]  # Ai cũng xem được, nhưng chỉ người tạo hoặc admin mới sửa/xóa được
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        IsAuthorOrAdmin,
+    ]  # Ai cũng xem được, nhưng chỉ người tạo hoặc admin mới sửa/xóa được
 
     def perform_create(self, serializer):
         # Tự động gán author là user đang đăng nhập
