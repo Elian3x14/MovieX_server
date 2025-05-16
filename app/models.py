@@ -28,6 +28,9 @@ class User(AbstractUser):
         "username",
     ]
 
+    def __str__(self):
+        return self.email
+
 
 class Genre(models.Model):
     name = models.CharField(max_length=100)
@@ -83,17 +86,23 @@ class Cinema(models.Model):
     address = models.TextField()
     city = models.CharField(max_length=100)
 
+    def __str__(self):
+        return self.name
 
 class Room(models.Model):
     cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     total_seats = models.PositiveIntegerField()
 
+    def __str__(self):
+        return f"{self.name} - {self.cinema.name}"
 
 class SeatType(models.Model):
     name = models.CharField(max_length=50)  # VD: VIP, Standard, Couple
     extra_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
+    def __str__(self):
+        return self.name
 
 class Seat(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
@@ -106,6 +115,8 @@ class Seat(models.Model):
     class Meta:
         unique_together = ("room", "seat_row", "seat_col")
 
+    def __str__(self):
+        return f"{self.room.name} - Row: {self.seat_row}, Col: {self.seat_col}"
 
 class Showtime(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
@@ -114,6 +125,8 @@ class Showtime(models.Model):
     end_time = models.DateTimeField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def __str__(self):
+        return f"{self.movie.title} - {self.room.name} - {self.start_time.strftime('%Y-%m-%d %H:%M')}"
 
 class Booking(models.Model):
     STATUS_CHOICES = (
@@ -127,6 +140,8 @@ class Booking(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
 
+    def __str__(self):
+        return f"Booking {self.id} - {self.user.email} - {self.showtime.movie.title} - {self.booking_time.strftime('%Y-%m-%d %H:%M')}"
 
 class BookingSeat(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
@@ -135,12 +150,17 @@ class BookingSeat(models.Model):
     class Meta:
         unique_together = ("booking", "seat")
 
+    def __str__(self):
+        return f"BookingSeat {self.id} - Booking: {self.booking.id} - Seat: {self.seat.room.name} - Row: {self.seat.seat_row}, Col: {self.seat.seat_col}"
 
 class Payment(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
     method = models.CharField(max_length=50)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     paid_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Payment {self.id} - Booking: {self.booking.id} - Amount: {self.amount} - Method: {self.method}"
 
 
 class Review(models.Model):
