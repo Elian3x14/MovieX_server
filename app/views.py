@@ -299,19 +299,31 @@ class AvailableSeatsView(generics.ListAPIView):
         room = showtime.room
 
         # Ghế đã được đặt
-        booked_seat_ids = set(
+        reserved_seat_ids = set(
             BookingSeat.objects.filter(
                 booking__showtime_id=showtime_id,
-                booking__status__in=["pending", "paid"],
+                booking__status="paid",
+            ).values_list("seat_id", flat=True)
+        )
+        # Ghế đã được giữ
+        held_seat_ids = set(
+            BookingSeat.objects.filter(
+                booking__showtime_id=showtime_id,
+                booking__status="pending",
             ).values_list("seat_id", flat=True)
         )
 
         # Toàn bộ ghế trong phòng
         all_seats = Seat.objects.filter(room=room)
 
-        # Gắn flag is_booked cho mỗi ghế
+        # Cập nhật trạng thái ghế
         for seat in all_seats:
-            seat.is_booked = seat.id in booked_seat_ids
+            if seat.id in held_seat_ids:
+                seat.status = "hold"
+            elif seat.id in reserved_seat_ids:
+                seat.status = "reserved"
+            else:
+                seat.status = "available"
 
         return all_seats
 

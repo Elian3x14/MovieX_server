@@ -155,9 +155,17 @@ class SeatTypeSerializer(serializers.ModelSerializer):
 
 
 class SeatSerializer(serializers.ModelSerializer):
+    SEAT_STATUS_CHOICES = (
+        ("available", "Available"), # Ghế còn trống
+        ("reserved", "Reserved"), # Ghế đã đặt
+        ("hold", "Hold"), # Ghế đang giữ bởi người dùng
+        ("unavailable", "Unavailable"),
+    )
     seat_type = SeatTypeSerializer(read_only=True)
-    is_booked = serializers.BooleanField()
-
+    status = serializers.ChoiceField(
+        choices=SEAT_STATUS_CHOICES,
+        default="available",
+    )
     class Meta:
         model = Seat
         fields = "__all__"
