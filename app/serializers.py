@@ -141,6 +141,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class ShowtimeSerializer(serializers.ModelSerializer):
     movie = MovieSerializer(read_only=True)
+    room = RoomSerializer(read_only=True)
 
     class Meta:
         model = Showtime
