@@ -2,7 +2,7 @@ from django.db.models import Q
 from rest_framework.decorators import action
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
-from django.http import JsonResponse
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -49,6 +49,10 @@ class IsAuthorOrAdmin(BasePermission):
             return True
         return obj.author == request.user or request.user.is_staff
 
+class MovieReviewPagination(PageNumberPagination):
+    page_size = 1  # số review mỗi trang
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 @extend_schema(tags=["Auth"])
 class RegisterView(generics.CreateAPIView):
@@ -393,12 +397,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
         # Tự động gán author là user đang đăng nhập
         serializer.save(author=self.request.user)
 
-
 @extend_schema(
     tags=["Movies"],
 )
-class MovieReviewList(APIView):
-    def get(self, request, movie_id):
-        reviews = Review.objects.filter(movie_id=movie_id)
-        serializer = ReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+class MovieReviewList(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    pagination_class = MovieReviewPagination
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        movie_id = self.kwargs['movie_id']
+        return Review.objects.filter(movie_id=movie_id)
