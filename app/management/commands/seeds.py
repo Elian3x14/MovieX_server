@@ -203,6 +203,39 @@ def seed_showtimes():
                 showtime.save()
 
 
+def seed_reviews(num_reviews_per_movie=5):
+    users = list(User.objects.all())
+    movies = list(Movie.objects.all())
+    sample_comments = [
+        "Great movie, really enjoyed it!",
+        "Not bad, but could be better.",
+        "Amazing visuals and story.",
+        "I didn't like the ending.",
+        "Would watch it again!",
+        "Too slow for my taste.",
+        "Outstanding performances by the cast.",
+        "The plot was quite predictable.",
+        "Highly recommend to everyone.",
+        "A masterpiece!",
+    ]
+
+    # Xóa hết review cũ (tùy chọn)
+    Review.objects.all().delete()
+
+    for movie in movies:
+        for _ in range(num_reviews_per_movie):
+            author = random.choice(users)
+            rating = random.randint(0, 10)
+            comment = random.choice(sample_comments)
+            Review.objects.create(
+                author=author,
+                movie=movie,
+                rating=rating,
+                comment=comment,
+                # date tự động set vì auto_now_add=True
+            )
+
+
 """
 
         

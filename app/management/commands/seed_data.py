@@ -8,6 +8,7 @@ from app.management.commands.seeds import (
     seed_actors,
     seed_showtimes,
     seed_genres,
+    seed_reviews,
 )
 
 
@@ -38,5 +39,8 @@ class Command(BaseCommand):
 
         seed_showtimes()
         self.stdout.write(self.style.SUCCESS("Showtime seeded"))
+
+        seed_reviews()
+        self.stdout.write(self.style.SUCCESS("Reviews seeded"))
 
         self.stdout.write(self.style.SUCCESS("Seeding completed successfully."))

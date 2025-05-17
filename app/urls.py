@@ -6,8 +6,9 @@ from .views import *
 router = DefaultRouter()
 router.register(r"rooms", RoomViewSet, basename="room")
 router.register(r"booking-seats", BookingSeatViewSet, basename="booking-seat")
-router.register(r'actors', ActorViewSet)
-router.register(r'genres', GenreViewSet)
+router.register(r"actors", ActorViewSet)
+router.register(r"genres", GenreViewSet)
+router.register(r"reviews", ReviewViewSet, basename="review")
 
 urlpatterns = [
     #
@@ -25,11 +26,16 @@ urlpatterns = [
     path("movies/create/", MovieCreateView.as_view()),
     path("movies/<int:id>/", MovieDetailView.as_view()),
     path(
-        "movies/<int:id>/edit/",
+        "movies/<int:id>/",
         MovieUpdateDeleteView.as_view(),
         name="movie-edit-delete",
     ),
     path("movies/<int:movie_id>/showtimes/", ShowtimeListView.as_view()),
+    path(
+        "movies/<int:movie_id>/reviews/",
+        MovieReviewList.as_view(),
+        name="movie-reviews",
+    ),
     #
     path("cinemas/", CinemaListCreateView.as_view(), name="cinema-list-create"),
     path(
@@ -41,7 +47,6 @@ urlpatterns = [
     path("showtimes/create/", ShowtimeCreateView.as_view()),
     path("showtimes/<int:pk>/", ShowtimeDetailView.as_view()),
     path("showtimes/<int:showtime_id>/seats/", AvailableSeatsView.as_view()),
-
     #
     path("seat-types/", SeatTypeListCreateView.as_view(), name="seat-type-list-create"),
     path("seat-types/<int:pk>/", SeatTypeDetailView.as_view(), name="seat-type-detail"),

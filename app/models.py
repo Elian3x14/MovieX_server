@@ -165,6 +165,7 @@ class Payment(models.Model):
 
 class Review(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='reviews') 
     rating = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(10)],
         default=0,

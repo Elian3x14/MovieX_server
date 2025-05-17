@@ -69,7 +69,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             host = request.get_host()
         else:
             host = "localhost:8000"
-        
+
         activation_link = f"http://{host}/api/activate/{uid}/{token}/"
 
         # Gửi mail
@@ -106,20 +106,23 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError("Mật khẩu phải dài ít nhất 8 ký tự.")
         return value
 
+
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
-        fields = ["id", "name"]  
+        fields = ["id", "name"]
+
 
 class ActorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Actor
-        fields = ['id', 'name']
+        fields = ["id", "name"]
+
 
 class MovieSerializer(serializers.ModelSerializer):
     actors = ActorSerializer(many=True, read_only=True)
     genres = GenreSerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Movie
         fields = "__all__"
@@ -156,9 +159,9 @@ class SeatTypeSerializer(serializers.ModelSerializer):
 
 class SeatSerializer(serializers.ModelSerializer):
     SEAT_STATUS_CHOICES = (
-        ("available", "Available"), # Ghế còn trống
-        ("reserved", "Reserved"), # Ghế đã đặt
-        ("hold", "Hold"), # Ghế đang giữ bởi người dùng
+        ("available", "Available"),  # Ghế còn trống
+        ("reserved", "Reserved"),  # Ghế đã đặt
+        ("hold", "Hold"),  # Ghế đang giữ bởi người dùng
         ("unavailable", "Unavailable"),
     )
     seat_type = SeatTypeSerializer(read_only=True)
@@ -166,9 +169,11 @@ class SeatSerializer(serializers.ModelSerializer):
         choices=SEAT_STATUS_CHOICES,
         default="available",
     )
+
     class Meta:
         model = Seat
         fields = "__all__"
+
 
 class BookingSeatSerializer(serializers.ModelSerializer):
     seat = SeatSerializer(read_only=True)
@@ -176,6 +181,7 @@ class BookingSeatSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingSeat
         fields = ["id", "booking", "seat"]
+
 
 class BookingSerializer(serializers.ModelSerializer):
     seats = BookingSeatSerializer(many=True)
@@ -237,10 +243,12 @@ class BookingSerializer(serializers.ModelSerializer):
             instance.save()
         return instance
 
+
 class ReviewSerializer(serializers.ModelSerializer):
-    author = UserSerializer() 
+    author = UserSerializer()
+    movie = MovieSerializer()
 
     class Meta:
         model = Review
-        fields = ['id', 'author', 'rating', 'comment', 'date']
-        read_only_fields = ['id', 'author', 'date']
+        fields = ["id", "author", "rating", "movie", "comment", "date"]
+        read_only_fields = ["id", "author", "date"]

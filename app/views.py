@@ -1,5 +1,5 @@
 from django.db.models import Q
-
+from rest_framework.decorators import action
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
 from django.http import JsonResponse
@@ -268,7 +268,7 @@ class RoomViewSet(viewsets.ModelViewSet):
     serializer_class = RoomSerializer
 
 
-@extend_schema(tags=["Showtimes"])
+@extend_schema(tags=["Movies"])
 class ShowtimeListView(generics.ListAPIView):
     serializer_class = ShowtimeSerializer
 
@@ -380,6 +380,7 @@ class BookingSeatViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSeatSerializer
 
 
+@extend_schema(tags=["Reviews"])
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -391,3 +392,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Tự động gán author là user đang đăng nhập
         serializer.save(author=self.request.user)
+
+
+@extend_schema(
+    tags=["Movies"],
+)
+class MovieReviewList(APIView):
+    def get(self, request, movie_id):
+        reviews = Review.objects.filter(movie_id=movie_id)
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
