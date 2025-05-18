@@ -56,6 +56,11 @@ urlpatterns = [
     #
     path("bookings/", BookingCreateView.as_view()),
     path("bookings/<int:pk>/", BookingDetailView.as_view()),
+    path(
+        "bookings/<int:booking_id>/set-seats/",
+        SetBookingSeatView.as_view(),
+        name="set-booking-seats",
+    ),
 ]
 
 urlpatterns += router.urls

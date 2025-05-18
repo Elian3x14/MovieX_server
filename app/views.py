@@ -17,6 +17,10 @@ from rest_framework.permissions import (
     SAFE_METHODS,
 )
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 from drf_spectacular.utils import extend_schema
@@ -444,3 +448,111 @@ class MovieReviewList(generics.ListAPIView):
     def get_queryset(self):
         movie_id = self.kwargs["movie_id"]
         return Review.objects.filter(movie_id=movie_id).order_by("-date")
+
+
+@extend_schema(tags=["Bookings"])
+class SetBookingSeatView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SetBookingSeatSerializer
+
+    def post(self, request, booking_id):
+        serializer = SetBookingSeatSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        seat_ids = serializer.validated_data["seat_ids"]
+
+        booking = get_object_or_404(Booking, id=booking_id)
+
+        if booking.user != user:
+            return Response(
+                {"error": "Permission denied."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        seats = Seat.objects.all()
+        if seats.filter(id__in=seat_ids).count() != len(seat_ids):
+            return Response(
+                {"error": "Some seat_ids are invalid"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        def is_seat_booked(seat, showtime):
+            now = timezone.now()
+            return (
+                BookingSeat.objects
+                # Lấy tất cả ghế đã đặt cho showtime này
+                .filter(seat=seat, booking__showtime=showtime)
+                # Kiểm tra trạng thái booking
+                .filter(
+                    Q(booking__status="paid")  # Nếu booking đã thanh toán
+                    |
+                    # Hoặc booking đang chờ thanh toán và chưa hết hạn session
+                    Q(booking__status="pending", booking__expired_at__gt=now)
+                ).exists()
+            )  # Thì xem như ghế đã được đặt
+
+        # Kiểm tra seat bị trùng
+        for seat_id in seat_ids:
+            seat = seats.get(id=seat_id)
+            # Nếu seat đang được giữ bởi booking này thì bỏ qua check (để user đặt lại seat cũ của họ)
+            if BookingSeat.objects.filter(booking=booking, seat=seat).exists():
+                continue
+            if is_seat_booked(seat, booking.showtime):
+                return Response(
+                    {"error": f"Seat {seat.id} is already booked."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Xóa seat cũ, thêm seat mới
+        BookingSeat.objects.filter(booking=booking).delete()
+        new_booking_seats = [
+            BookingSeat(booking=booking, seat=seats.get(id=sid)) for sid in seat_ids
+        ]
+        BookingSeat.objects.bulk_create(new_booking_seats)
+
+        # Serialize lại danh sách các seat vừa được đặt thành công
+        booked_seats = Seat.objects.filter(id__in=seat_ids)
+
+        # TODO: sửa lại ws URL cho đúng ý nghĩa
+        # Gửi event websocket
+        channel_layer = get_channel_layer()
+        group_name = f"booking_{booking.showtime.id}"
+        print(f"Sending group_send to {group_name} with seats {seat_ids}")
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "booking_update",
+                "message": {
+                    "booking_id": booking_id,
+                    "seat_ids": seat_ids,
+                },
+            },
+        )
+
+        return Response(
+            {
+                "seat_ids": seat_ids,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+def get_seat_status(seat, showtime):
+    bookings = BookingSeat.objects.filter(
+        seat=seat, booking__showtime=showtime
+    ).select_related("booking")
+
+    for bs in bookings:
+        booking = bs.booking
+        if booking.status == "paid":
+            return "Booked"
+        elif (
+            booking.status == "pending"
+            and booking.expired_at
+            and booking.expired_at > timezone.now()
+        ):
+            return "Pending"
+        elif booking.status in ["cancelled", "expired"]:
+            continue
+    return "Available"
