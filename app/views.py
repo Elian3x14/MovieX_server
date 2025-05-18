@@ -16,6 +16,7 @@ from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly,
     SAFE_METHODS,
 )
+from django.utils import timezone
 
 
 from drf_spectacular.utils import extend_schema
@@ -55,10 +56,12 @@ class IsAuthorOrAdmin(BasePermission):
             return True
         return obj.author == request.user or request.user.is_staff
 
+
 class MovieReviewPagination(PageNumberPagination):
     page_size = 1  # số review mỗi trang
     page_size_query_param = "page_size"
     max_page_size = 100
+
 
 @extend_schema(tags=["Auth"])
 class RegisterView(generics.CreateAPIView):
@@ -374,7 +377,31 @@ class SeatDetailView(generics.RetrieveUpdateDestroyAPIView):
 @extend_schema(tags=["Bookings"])
 class BookingCreateView(generics.CreateAPIView):
     serializer_class = BookingSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        showtime_id = request.data.get("showtime_id")
+
+        if not showtime_id:
+            raise ValidationError({"showtime_id": "This field is required."})
+
+        try:
+            showtime = Showtime.objects.get(id=showtime_id)
+        except Showtime.DoesNotExist:
+            raise ValidationError({"showtime_id": "Showtime does not exist."})
+
+        # Tạo booking với trạng thái pending, chưa có ghế
+        booking = Booking.objects.create(
+            user=user,
+            showtime=showtime,
+            status="pending",
+            # TODO: set expiration time in .env later
+            expired_at=timezone.now() + timezone.timedelta(minutes=5)
+        )
+
+        serializer = self.get_serializer(booking)
+        return Response(serializer.data)
 
 
 @extend_schema(tags=["Bookings"])
@@ -403,6 +430,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         # Tự động gán author là user đang đăng nhập
         serializer.save(author=self.request.user)
 
+
 @extend_schema(
     tags=["Movies"],
 )
@@ -412,5 +440,5 @@ class MovieReviewList(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        movie_id = self.kwargs['movie_id']
-        return Review.objects.filter(movie_id=movie_id)
+        movie_id = self.kwargs["movie_id"]
+        return Review.objects.filter(movie_id=movie_id).order_by("-date")

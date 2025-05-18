@@ -191,63 +191,14 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["showtime", "total_amount", "seats"]
-
-    def create(self, validated_data):
-        seats_data = validated_data.pop("seats")
-        user = self.context["request"].user
-        showtime = validated_data["showtime"]
-        total = 0
-
-        with transaction.atomic():
-            # Tính tổng tiền
-            for seat_data in seats_data:
-                seat = Seat.objects.get(id=seat_data["seat_id"])
-                extra = seat.seat_type.extra_price if seat.seat_type else 0
-                total += showtime.price + extra
-
-            validated_data["total_amount"] = total
-            booking = Booking.objects.create(user=user, **validated_data)
-
-            for seat_data in seats_data:
-                BookingSeat.objects.create(
-                    booking=booking, seat_id=seat_data["seat_id"]
-                )
-
-        return booking
-
-    def update(self, instance, validated_data):
-        if instance.status in ["paid", "cancelled"]:
-            raise ValidationError("Cannot modify a paid or cancelled booking.")
-
-        seats_data = validated_data.pop("seats", None)
-        showtime = validated_data.get("showtime", instance.showtime)
-
-        with transaction.atomic():
-            for attr, value in validated_data.items():
-                setattr(instance, attr, value)
-
-            if seats_data is not None:
-                # Xoá ghế cũ
-                BookingSeat.objects.filter(booking=instance).delete()
-
-                total = 0
-                for seat_data in seats_data:
-                    seat = Seat.objects.get(id=seat_data["seat_id"])
-                    BookingSeat.objects.create(booking=instance, seat=seat)
-                    extra = seat.seat_type.extra_price if seat.seat_type else 0
-                    total += showtime.price + extra
-
-                instance.total_amount = total
-
-            instance.save()
-        return instance
+        fields = ["id", "user", "showtime", "status", "seats", "expired_at"]
+        read_only_fields = ["id", "user", "status", "seats", "expired_at"]
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     movie = serializers.PrimaryKeyRelatedField(queryset=Movie.objects.all())
-    
+
     class Meta:
         model = Review
         fields = ["id", "author", "rating", "movie", "comment", "date"]
