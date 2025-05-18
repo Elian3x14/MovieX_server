@@ -245,9 +245,9 @@ class BookingSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = UserSerializer()
-    movie = MovieSerializer()
-
+    author = UserSerializer(read_only=True)
+    movie = serializers.PrimaryKeyRelatedField(queryset=Movie.objects.all())
+    
     class Meta:
         model = Review
         fields = ["id", "author", "rating", "movie", "comment", "date"]
