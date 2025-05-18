@@ -184,15 +184,14 @@ class BookingSeatSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    seats = BookingSeatSerializer(many=True)
     showtime = serializers.PrimaryKeyRelatedField(
         queryset=Showtime.objects.all(), write_only=True
     )
 
     class Meta:
         model = Booking
-        fields = ["id", "user", "showtime", "status", "seats", "expired_at"]
-        read_only_fields = ["id", "user", "status", "seats", "expired_at"]
+        fields = ["id", "user", "showtime", "status", "expired_at"]
+        read_only_fields = ["id", "user", "status", "expired_at"]
 
 
 class ReviewSerializer(serializers.ModelSerializer):

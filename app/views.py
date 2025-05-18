@@ -381,7 +381,8 @@ class BookingCreateView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        showtime_id = request.data.get("showtime_id")
+
+        showtime_id = request.data.get("showtime")
 
         if not showtime_id:
             raise ValidationError({"showtime_id": "This field is required."})
@@ -396,8 +397,9 @@ class BookingCreateView(generics.CreateAPIView):
             user=user,
             showtime=showtime,
             status="pending",
+            total_amount=0,  # Chưa có ghế nên tổng tiền là 0
             # TODO: set expiration time in .env later
-            expired_at=timezone.now() + timezone.timedelta(minutes=5)
+            expired_at=timezone.now() + timezone.timedelta(minutes=5),
         )
 
         serializer = self.get_serializer(booking)
