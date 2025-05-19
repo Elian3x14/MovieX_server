@@ -1,5 +1,6 @@
 # consumers.py
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+import json
 
 
 class BookingConsumer(AsyncJsonWebsocketConsumer):
@@ -15,22 +16,24 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def seat_added(self, event):
-        await self.send_json(
-            {
-                "type": "seat_added",
-                "seat_id": event["seat_id"],
-                "seat_row": event["seat_row"],
-                "seat_col": event["seat_col"],
-                "room": event["room"],
-            }
+        # TODO: Thêm log ở đây 
+        message = event["message"]
+        await self.send(
+            json.dumps(
+                {
+                    "type": "seat_added",
+                    "seat_id": message["seat_id"],  # lấy từ event["message"]
+                }
+            )
         )
 
-    async def booking_update(self, event):
-        print("Booking update event received:", event)
+    async def seat_removed(self, event):
+        message = event["message"]
         await self.send_json(
-            {
-                "type": "seat_update",
-                "seats": event["message"]["seat_ids"],
-                "booking_id": event["message"]["booking_id"],
-            }
+            json.dumps(
+                {
+                    "type": "seat_removed",
+                    "seat_id": message["seat_id"],
+                }
+            )
         )

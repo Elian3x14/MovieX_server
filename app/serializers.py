@@ -204,9 +204,5 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "author", "date"]
 
 
-class SetBookingSeatSerializer(serializers.Serializer):
-    seat_ids = serializers.ListField(
-        child=serializers.IntegerField(min_value=1),
-        allow_empty=False,
-        help_text="Danh sách ID của các ghế cần đặt cho booking"
-    )
+class SingleSeatBookingSerializer(serializers.Serializer):
+    seat_id = serializers.IntegerField()
