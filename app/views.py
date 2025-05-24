@@ -377,7 +377,6 @@ class SeatDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SeatSerializer
     # permission_classes = [permissions.IsAdminUser]
 
-
 @extend_schema(tags=["Bookings"])
 class BookingCreateView(generics.CreateAPIView):
     serializer_class = BookingSerializer
@@ -385,24 +384,34 @@ class BookingCreateView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-
         showtime_id = request.data.get("showtime")
 
         if not showtime_id:
-            raise ValidationError({"showtime_id": "This field is required."})
+            raise ValidationError({"showtime": "This field is required."})
 
         try:
             showtime = Showtime.objects.get(id=showtime_id)
         except Showtime.DoesNotExist:
-            raise ValidationError({"showtime_id": "Showtime does not exist."})
+            raise ValidationError({"showtime": "Showtime does not exist."})
 
-        # Tạo booking với trạng thái pending, chưa có ghế
+        # Kiểm tra xem đã có booking đang pending chưa (và chưa hết hạn)
+        existing_booking = Booking.objects.filter(
+            user=user,
+            showtime=showtime,
+            status="pending",
+            expired_at__gt=timezone.now()
+        ).first()
+
+        if existing_booking:
+            serializer = self.get_serializer(existing_booking)
+            return Response(serializer.data)
+
+        # Nếu không có thì tạo mới
         booking = Booking.objects.create(
             user=user,
             showtime=showtime,
             status="pending",
-            total_amount=0,  # Chưa có ghế nên tổng tiền là 0
-            # TODO: set expiration time in .env later
+            total_amount=0,
             expired_at=timezone.now() + timezone.timedelta(minutes=5),
         )
 
