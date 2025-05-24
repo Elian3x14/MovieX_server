@@ -481,11 +481,11 @@ class AddBookingSeatView(APIView):
 
         BookingSeat.objects.create(booking=booking, seat=seat)
         
-        self._notify_ws(booking.showtime.id, seat_id)
+        self._notify_ws(booking.showtime.id, seat_id, user.id)
 
         return Response({"seat_added": seat_id}, status=201)
 
-    def _notify_ws(self, showtime_id, seat_id):
+    def _notify_ws(self, showtime_id, seat_id, sender_id):
         channel_layer = get_channel_layer()
         group_name = f"booking_{showtime_id}"
         print(f"send to group name: {group_name}")
@@ -495,6 +495,7 @@ class AddBookingSeatView(APIView):
                 "type": "seat_added",
                 "message": {
                     "seat_id": seat_id,
+                    "sender_id": sender_id,  # Thêm ID của người gửi để xử lý sau
                 },
             },
         )
@@ -515,10 +516,10 @@ class RemoveBookingSeatView(APIView):
         if deleted == 0:
             return Response({"message": "Seat not in booking."}, status=200)
 
-        self._notify_ws(booking.showtime.id, seat_id)
+        self._notify_ws(booking.showtime.id, seat_id, user.id)
         return Response({"seat_removed": seat_id}, status=200)
 
-    def _notify_ws(self, showtime_id, seat_id):
+    def _notify_ws(self, showtime_id, seat_id, sender_id):
         channel_layer = get_channel_layer()
         group_name = f"booking_{showtime_id}"
         async_to_sync(channel_layer.group_send)(
@@ -527,6 +528,7 @@ class RemoveBookingSeatView(APIView):
                 "type": "seat_removed",
                 "message": {
                     "seat_id": seat_id,
+                    "sender_id": sender_id,  # Thêm ID của người gửi để xử lý sau
                 },
             },
         )

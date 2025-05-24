@@ -23,17 +23,19 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                 {
                     "type": "seat_added",
                     "seat_id": message["seat_id"],  # lấy từ event["message"]
+                    "sender_id": message["sender_id"],  # lấy từ event["message"]
                 }
             )
         )
 
     async def seat_removed(self, event):
         message = event["message"]
-        await self.send_json(
+        await self.send(
             json.dumps(
                 {
                     "type": "seat_removed",
                     "seat_id": message["seat_id"],
+                    "sender_id": message["sender_id"],  # lấy từ event["message"]
                 }
             )
         )
