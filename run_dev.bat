@@ -1,0 +1,1 @@
+uvicorn movieX.asgi:application --reload
