@@ -21,6 +21,7 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from decimal import Decimal
 
 
 from drf_spectacular.utils import extend_schema
@@ -575,5 +576,21 @@ class UserPendingBookingView(APIView):
         )
         if not booking:
             return Response({"detail": "No pending booking found or all expired."}, status=404)
+        
+        # Lấy tất cả ghế của booking
+        booking_seats = BookingSeat.objects.filter(booking=booking).select_related('seat__seat_type')
+
+        # Tính tổng extra_price từ seat types
+        total_amount = Decimal('0.00')
+        for bs in booking_seats:
+            seat_type = bs.seat.seat_type
+            if seat_type and seat_type.extra_price:
+                # Tiền vé + tiền ghế
+                price_per_seat = booking.showtime.price + seat_type.extra_price 
+                total_amount += price_per_seat
+
+        # Cập nhật total_amount vào booking (nếu muốn lưu lại)
+        booking.total_amount = total_amount
+        booking.save(update_fields=['total_amount'])
         serializer = BookingDetailSerializer(booking)
         return Response(serializer.data)

@@ -148,6 +148,8 @@ class Booking(models.Model):
 class BookingSeat(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
+    # TODO: Thêm trường để lưu trạng thái ghế (đã đặt, đang giữ, v.v.)
+    # TODO: Thêm trường để lưu giá vé cho ghế này (nếu có)
 
     class Meta:
         unique_together = ("booking", "seat")
