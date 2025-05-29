@@ -484,6 +484,7 @@ class AddBookingSeatView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, booking_id, seat_id):
+        # TODO: Kiểm tra có chừa ra ghế đơn trong hàng không?
         user = request.user
         booking = get_object_or_404(Booking, id=booking_id)
 
