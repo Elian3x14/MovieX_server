@@ -193,6 +193,12 @@ class BookingSerializer(serializers.ModelSerializer):
         fields = ["id", "user", "showtime", "status", "expired_at"]
         read_only_fields = ["id", "user", "status", "expired_at"]
 
+class BookingDetailSerializer(serializers.ModelSerializer):
+    showtime = ShowtimeSerializer(read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'showtime', 'status', 'expired_at', 'total_amount']
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)

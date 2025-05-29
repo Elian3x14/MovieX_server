@@ -431,6 +431,25 @@ class BookingSeatViewSet(viewsets.ModelViewSet):
     queryset = BookingSeat.objects.all()
     serializer_class = BookingSeatSerializer
 
+    @action(detail=True, methods=["get"], url_path="seats")
+    def seats_by_booking(self, request, pk=None):
+        # pk là ID của booking (ở đây tương ứng với booking_id)
+        booking_id = pk
+        # Lấy booking, kiểm tra quyền
+        try:
+            booking = Booking.objects.get(id=booking_id)
+        except Booking.DoesNotExist:
+            return Response({"detail": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if booking.user != request.user:
+            return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Lấy seat list của booking
+        booking_seats = BookingSeat.objects.filter(booking=booking)
+        seats = [bs.seat for bs in booking_seats]
+
+        serializer = SeatSerializer(seats, many=True)
+        return Response(serializer.data)
 
 @extend_schema(tags=["Reviews"])
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -541,3 +560,20 @@ class RemoveBookingSeatView(APIView):
                 },
             },
         )
+
+@extend_schema(tags=["Users"])
+class UserPendingBookingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        now = timezone.now()
+        booking = (
+            Booking.objects
+            .filter(user=request.user, status='pending', expired_at__gt=now)
+            .order_by('-booking_time')
+            .first()
+        )
+        if not booking:
+            return Response({"detail": "No pending booking found or all expired."}, status=404)
+        serializer = BookingDetailSerializer(booking)
+        return Response(serializer.data)

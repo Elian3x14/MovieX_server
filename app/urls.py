@@ -64,6 +64,8 @@ urlpatterns = [
         "bookings/<int:booking_id>/remove-seat/<int:seat_id>/",
         RemoveBookingSeatView.as_view(),
     ),
+    # User-specific bookings
+    path('users/bookings/pending/', UserPendingBookingView.as_view(), name='user-pending-bookings'),
 ]
 
 urlpatterns += router.urls
