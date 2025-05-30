@@ -2,7 +2,6 @@ from django.db.models import Q
 from rest_framework.decorators import action
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -12,7 +11,6 @@ from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
 from django.http import HttpResponseRedirect
 from rest_framework.permissions import (
-    BasePermission,
     IsAuthenticatedOrReadOnly,
     SAFE_METHODS,
 )
@@ -26,46 +24,12 @@ from decimal import Decimal
 
 from drf_spectacular.utils import extend_schema
 from django.conf import settings
-
-from .models import *
-from .serializers import *
 from django.core.mail import send_mail
 
-
-class IsAdminOrReadOnly(BasePermission):
-    """
-    Cho phép mọi người dùng GET, HEAD, OPTIONS.
-    Nhưng chỉ admin mới được POST, PUT, DELETE.
-    """
-
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user and request.user.is_staff
-
-
-class IsAuthorOrAdmin(BasePermission):
-    """
-    - GET: Ai cũng được
-    - POST/PUT/DELETE: Chỉ người đăng nhập
-    - PUT/DELETE: Chỉ author hoặc admin
-    """
-
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user and request.user.is_authenticated
-
-    def has_object_permission(self, request, view, obj):
-        if request.method in SAFE_METHODS:
-            return True
-        return obj.author == request.user or request.user.is_staff
-
-
-class MovieReviewPagination(PageNumberPagination):
-    page_size = 1  # số review mỗi trang
-    page_size_query_param = "page_size"
-    max_page_size = 100
+from .models import *
+from .permissions import IsAdminOrReadOnly, IsAuthorOrAdmin
+from .serializers import *
+from .pagination import MovieReviewPagination
 
 
 @extend_schema(tags=["Auth"])
@@ -292,7 +256,8 @@ class ShowtimeListView(generics.ListAPIView):
 
     def get_queryset(self):
         movie_id = self.kwargs["movie_id"]
-        return Showtime.objects.filter(movie_id=movie_id)
+        now = timezone.now()
+        return Showtime.objects.filter(movie_id=movie_id, end_time__gt=now)
 
 
 @extend_schema(tags=["Showtimes"])
@@ -378,6 +343,7 @@ class SeatDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SeatSerializer
     # permission_classes = [permissions.IsAdminUser]
 
+
 @extend_schema(tags=["Bookings"])
 class BookingCreateView(generics.CreateAPIView):
     serializer_class = BookingSerializer
@@ -400,7 +366,7 @@ class BookingCreateView(generics.CreateAPIView):
             user=user,
             showtime=showtime,
             status="pending",
-            expired_at__gt=timezone.now()
+            expired_at__gt=timezone.now(),
         ).first()
 
         if existing_booking:
@@ -424,7 +390,7 @@ class BookingCreateView(generics.CreateAPIView):
 class BookingDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 @extend_schema(tags=["BookingSeats"])
@@ -440,10 +406,14 @@ class BookingSeatViewSet(viewsets.ModelViewSet):
         try:
             booking = Booking.objects.get(id=booking_id)
         except Booking.DoesNotExist:
-            return Response({"detail": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Booking not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if booking.user != request.user:
-            return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+            )
 
         # Lấy seat list của booking
         booking_seats = BookingSeat.objects.filter(booking=booking)
@@ -451,6 +421,7 @@ class BookingSeatViewSet(viewsets.ModelViewSet):
 
         serializer = SeatSerializer(seats, many=True)
         return Response(serializer.data)
+
 
 @extend_schema(tags=["Reviews"])
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -501,16 +472,18 @@ class AddBookingSeatView(APIView):
 
         # Kiểm tra xem ghế đã bị người khác đặt chưa
         now = timezone.now()
-        if BookingSeat.objects.filter(
-            seat=seat, booking__showtime=booking.showtime
-        ).filter(
-            Q(booking__status="paid") |
-            Q(booking__status="pending", booking__expired_at__gt=now)
-        ).exists():
+        if (
+            BookingSeat.objects.filter(seat=seat, booking__showtime=booking.showtime)
+            .filter(
+                Q(booking__status="paid")
+                | Q(booking__status="pending", booking__expired_at__gt=now)
+            )
+            .exists()
+        ):
             return Response({"error": "Seat already booked."}, status=400)
 
         BookingSeat.objects.create(booking=booking, seat=seat)
-        
+
         self._notify_ws(booking.showtime.id, seat_id, user.id)
 
         return Response({"seat_added": seat_id}, status=201)
@@ -542,7 +515,9 @@ class RemoveBookingSeatView(APIView):
         if booking.user != user:
             return Response({"error": "Permission denied."}, status=403)
 
-        deleted, _ = BookingSeat.objects.filter(booking=booking, seat_id=seat_id).delete()
+        deleted, _ = BookingSeat.objects.filter(
+            booking=booking, seat_id=seat_id
+        ).delete()
         if deleted == 0:
             return Response({"message": "Seat not in booking."}, status=200)
 
@@ -563,6 +538,7 @@ class RemoveBookingSeatView(APIView):
             },
         )
 
+
 @extend_schema(tags=["Users"])
 class UserPendingBookingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -570,28 +546,33 @@ class UserPendingBookingView(APIView):
     def get(self, request):
         now = timezone.now()
         booking = (
-            Booking.objects
-            .filter(user=request.user, status='pending', expired_at__gt=now)
-            .order_by('-booking_time')
+            Booking.objects.filter(
+                user=request.user, status="pending", expired_at__gt=now
+            )
+            .order_by("-booking_time")
             .first()
         )
         if not booking:
-            return Response({"detail": "No pending booking found or all expired."}, status=404)
-        
+            return Response(
+                {"detail": "No pending booking found or all expired."}, status=404
+            )
+
         # Lấy tất cả ghế của booking
-        booking_seats = BookingSeat.objects.filter(booking=booking).select_related('seat__seat_type')
+        booking_seats = BookingSeat.objects.filter(booking=booking).select_related(
+            "seat__seat_type"
+        )
 
         # Tính tổng extra_price từ seat types
-        total_amount = Decimal('0.00')
+        total_amount = Decimal("0.00")
         for bs in booking_seats:
             seat_type = bs.seat.seat_type
             if seat_type and seat_type.extra_price:
                 # Tiền vé + tiền ghế
-                price_per_seat = booking.showtime.price + seat_type.extra_price 
+                price_per_seat = booking.showtime.price + seat_type.extra_price
                 total_amount += price_per_seat
 
         # Cập nhật total_amount vào booking (nếu muốn lưu lại)
         booking.total_amount = total_amount
-        booking.save(update_fields=['total_amount'])
+        booking.save(update_fields=["total_amount"])
         serializer = BookingDetailSerializer(booking)
         return Response(serializer.data)
