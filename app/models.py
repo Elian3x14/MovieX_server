@@ -153,7 +153,7 @@ class BookingSeat(models.Model):
         max_length=20,
         choices=[
             ("reserved", "Reserved"),  # Ghế đã đặt
-            ("hold", "Hold"),  # Ghế đang giữ bởi người dùng
+            ("hold", "Hold"),  # Ghế đang giữ bởi người dùng khác
             ("available", "Available"),  # Ghế còn trống
             ("unavailable", "Unavailable"),  # Ghế không khả dụng
         ],

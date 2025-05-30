@@ -160,8 +160,9 @@ class SeatTypeSerializer(serializers.ModelSerializer):
 class SeatSerializer(serializers.ModelSerializer):
     SEAT_STATUS_CHOICES = (
         ("available", "Available"),  # Ghế còn trống
-        ("reserved", "Reserved"),  # Ghế đã đặt
-        ("hold", "Hold"),  # Ghế đang giữ bởi người dùng
+        ("reserved", "Reserved"),  # Ghế đã đặt bởi người dùng khác
+        ("hold", "Hold"),  # Ghế đang giữ bởi người dùng khác
+        ("selected", "Selected"),  # Ghế đã được chọn bởi người dùng hiện tại
         ("unavailable", "Unavailable"),
     )
     seat_type = SeatTypeSerializer(read_only=True)
