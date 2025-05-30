@@ -149,16 +149,6 @@ class Booking(models.Model):
 class BookingSeat(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="booking_seats")
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ("reserved", "Reserved"),  # Ghế đã đặt
-            ("hold", "Hold"),  # Ghế đang giữ bởi người dùng khác
-            ("available", "Available"),  # Ghế còn trống
-            ("unavailable", "Unavailable"),  # Ghế không khả dụng
-        ],
-        default="available",
-    )
     final_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     class Meta:
         unique_together = ("booking", "seat")
@@ -166,14 +156,24 @@ class BookingSeat(models.Model):
     def __str__(self):
         return f"BookingSeat {self.id} - Booking: {self.booking.id} - Seat: {self.seat.room.name} - Row: {self.seat.seat_row}, Col: {self.seat.seat_col}"
 
+# TODO: migrate database rồi làm tiếp Payment
 class Payment(models.Model):
+    class PaymentMethod(models.TextChoices):
+        CREDIT_DEBIT = "credit_debit", "Credit/Debit Card"
+        E_WALLET = "e_wallet", "E-Wallet"
+        INTERNET_BANKING = "internet_banking", "Internet Banking"
+
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
-    method = models.CharField(max_length=50)
+    method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CREDIT_DEBIT,
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     paid_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Payment {self.id} - Booking: {self.booking.id} - Amount: {self.amount} - Method: {self.method}"
+        return f"Payment {self.id} - Booking: {self.booking.id} - Amount: {self.amount} - Method: {self.get_method_display()}"
 
 
 class Review(models.Model):
