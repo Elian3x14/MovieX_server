@@ -54,7 +54,7 @@ urlpatterns = [
     path("seats/create/", SeatCreateView.as_view()),
     path("seats/<int:pk>/", SeatDetailView.as_view()),
     #
-    path("bookings/", BookingCreateView.as_view()),
+    path("bookings/", BookingGetOrCreateView.as_view()),
     path("bookings/<int:pk>/", BookingDetailView.as_view()),
     path(
         "bookings/<int:booking_id>/add-seat/<int:seat_id>/",

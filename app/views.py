@@ -270,9 +270,11 @@ class ShowtimeCreateView(generics.CreateAPIView):
 @extend_schema(tags=["Showtimes"])
 class AvailableSeatsView(generics.ListAPIView):
     serializer_class = SeatSerializer
+    permission_classes = [permissions.IsAuthenticated] 
 
     def get_queryset(self):
         showtime_id = self.kwargs["showtime_id"]
+        user = self.request.user
 
         try:
             showtime = Showtime.objects.select_related("room").get(id=showtime_id)
@@ -288,27 +290,40 @@ class AvailableSeatsView(generics.ListAPIView):
                 booking__status="paid",
             ).values_list("seat_id", flat=True)
         )
-        # Ghế đã được giữ
-        held_seat_ids = set(
-            BookingSeat.objects.filter(
-                booking__showtime_id=showtime_id,
-                booking__status="pending",
-            ).values_list("seat_id", flat=True)
+
+        # Ghế đang giữ bởi tất cả người dùng
+        all_held_seats = BookingSeat.objects.filter(
+            booking__showtime_id=showtime_id,
+            booking__status="pending",
+            booking__expired_at__gt=timezone.now(),
+        ).select_related("booking", "seat")
+
+        # Ghế được giữ bởi user hiện tại
+        user_held_seat_ids = set(
+            bs.seat_id for bs in all_held_seats if bs.booking.user_id == user.id
+        )
+
+        # Ghế được giữ bởi người khác
+        other_held_seat_ids = set(
+            bs.seat_id for bs in all_held_seats if bs.booking.user_id != user.id
         )
 
         # Toàn bộ ghế trong phòng
         all_seats = Seat.objects.filter(room=room)
 
-        # Cập nhật trạng thái ghế
+        # Gán trạng thái cho từng ghế
         for seat in all_seats:
-            if seat.id in held_seat_ids:
-                seat.status = "hold"
-            elif seat.id in reserved_seat_ids:
+            if seat.id in reserved_seat_ids:
                 seat.status = "reserved"
+            elif seat.id in user_held_seat_ids:
+                seat.status = "selected"  # Ghế do chính user giữ
+            elif seat.id in other_held_seat_ids:
+                seat.status = "hold"      # Ghế do người khác giữ
             else:
                 seat.status = "available"
 
         return all_seats
+
 
 
 @extend_schema(tags=["Showtimes"])
@@ -345,7 +360,7 @@ class SeatDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @extend_schema(tags=["Bookings"])
-class BookingCreateView(generics.CreateAPIView):
+class BookingGetOrCreateView(generics.CreateAPIView):
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 

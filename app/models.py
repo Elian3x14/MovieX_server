@@ -141,16 +141,25 @@ class Booking(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
     expired_at = models.DateTimeField(null=True, blank=True)
+    
 
     def __str__(self):
         return f"Booking {self.id} - {self.user.email} - {self.showtime.movie.title} - {self.booking_time.strftime('%Y-%m-%d %H:%M')}"
 
 class BookingSeat(models.Model):
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="booking_seats")
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
-    # TODO: Thêm trường để lưu trạng thái ghế (đã đặt, đang giữ, v.v.)
-    # TODO: Thêm trường để lưu giá vé cho ghế này (nếu có)
-
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("reserved", "Reserved"),  # Ghế đã đặt
+            ("hold", "Hold"),  # Ghế đang giữ bởi người dùng
+            ("available", "Available"),  # Ghế còn trống
+            ("unavailable", "Unavailable"),  # Ghế không khả dụng
+        ],
+        default="available",
+    )
+    final_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     class Meta:
         unique_together = ("booking", "seat")
 
