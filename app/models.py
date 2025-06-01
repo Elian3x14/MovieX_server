@@ -156,7 +156,6 @@ class BookingSeat(models.Model):
     def __str__(self):
         return f"BookingSeat {self.id} - Booking: {self.booking.id} - Seat: {self.seat.room.name} - Row: {self.seat.seat_row}, Col: {self.seat.seat_col}"
 
-# TODO: migrate database rồi làm tiếp Payment
 class Payment(models.Model):
     class PaymentMethod(models.TextChoices):
         CREDIT_DEBIT = "credit_debit", "Credit/Debit Card"

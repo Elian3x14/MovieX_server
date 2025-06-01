@@ -1,6 +1,7 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
+
 from .views import *
 
 router = DefaultRouter()
@@ -66,6 +67,9 @@ urlpatterns = [
     ),
     # User-specific bookings
     path('users/bookings/pending/', UserPendingBookingView.as_view(), name='user-pending-bookings'),
+    
+    # payment
+    path('payments/zalo/pay/', ZaloPayPaymentView.as_view(), name='zalo-payment'),
 ]
 
 urlpatterns += router.urls
