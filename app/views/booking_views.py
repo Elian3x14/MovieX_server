@@ -11,18 +11,18 @@ from django.db.models import Q
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from django.views.decorators.csrf import csrf_exempt
 import hmac
 import hashlib
+import time
 from django.conf import settings
 from decimal import Decimal
-
 
 
 from ..serializers import BookingSerializer, BookingDetailSerializer
 from ..models import Booking, Showtime, BookingSeat, Seat
 from ..payments import create_zalopay_payment
-
 
 
 @extend_schema(tags=["Bookings"])
@@ -72,11 +72,10 @@ class BookingDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
 
 
 @extend_schema(tags=["Bookings"])
-class AddBookingSeatView(APIView):
+class AddBookingSeatView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, booking_id, seat_id):
@@ -130,7 +129,7 @@ class AddBookingSeatView(APIView):
 
 
 @extend_schema(tags=["Bookings"])
-class RemoveBookingSeatView(APIView):
+class RemoveBookingSeatView(GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, booking_id, seat_id):
@@ -162,52 +161,53 @@ class RemoveBookingSeatView(APIView):
                 },
             },
         )
-        
 
 
+@extend_schema(tags=["Bookings"])
 class ZaloPayPaymentView(APIView):
     def post(self, request, booking_id):
-        try:
-            booking = Booking.objects.get(id=booking_id)
-        except Booking.DoesNotExist:
-            return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+        booking = get_object_or_404(Booking, id=booking_id)
+        app_trans_id = time.strftime("%y%m%d") + "_" + str(int(time.time()))
+        result = create_zalopay_payment(
+            booking.id, int(booking.total_amount), app_trans_id=app_trans_id
+        )
 
-        result = create_zalopay_payment(booking.id, int(booking.total_price))
-
+        print("ZaloPay result:", result)
         if result.get("return_code") == 1:
-            return Response({
-                "order_url": result["order_url"],
-                "zp_trans_token": result["zp_trans_token"],
-                "app_trans_id": result["app_trans_id"],
-            })
-        else:
-            return Response({"error": result.get("return_message", "ZaloPay error")}, status=400)
-        
-        
-        
+            return Response(
+                {
+                    "order_url": result["order_url"],
+                    "zp_trans_token": result["zp_trans_token"],
+                }
+            )
+        return Response(
+            {"error": result.get("return_message", "ZaloPay error")},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
 @csrf_exempt
 def zalopay_callback(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         data = json.loads(request.body)
-        received_mac = data.get('mac')
-        callback_data = data.get('data')
+        received_mac = data.get("mac")
+        callback_data = data.get("data")
 
         # Tính toán lại MAC để xác thực
         key2 = settings.ZALOPAY_KEY2
-        calculated_mac = hmac.new(key2.encode(), callback_data.encode(), hashlib.sha256).hexdigest()
+        calculated_mac = hmac.new(
+            key2.encode(), callback_data.encode(), hashlib.sha256
+        ).hexdigest()
 
         if hmac.compare_digest(received_mac, calculated_mac):
             # Xử lý dữ liệu callback hợp lệ
             callback_json = json.loads(callback_data)
-            app_trans_id = callback_json.get('app_trans_id')
+            app_trans_id = callback_json.get("app_trans_id")
             # Cập nhật trạng thái đơn hàng trong cơ sở dữ liệu
-            return JsonResponse({'return_code': 1, 'return_message': 'success'})
+            return JsonResponse({"return_code": 1, "return_message": "success"})
         else:
-            return JsonResponse({'return_code': -1, 'return_message': 'invalid mac'})
-    return JsonResponse({'return_code': -1, 'return_message': 'invalid request'})        
-        
-        
-        
+            return JsonResponse({"return_code": -1, "return_message": "invalid mac"})
+    return JsonResponse({"return_code": -1, "return_message": "invalid request"})
 
 
 @extend_schema(tags=["Users"])
@@ -246,6 +246,4 @@ class UserPendingBookingView(APIView):
         booking.total_amount = total_amount
         booking.save(update_fields=["total_amount"])
         serializer = BookingDetailSerializer(booking)
-        return Response(serializer.data)   
-        
-        
+        return Response(serializer.data)

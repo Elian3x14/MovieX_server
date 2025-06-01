@@ -1,5 +1,6 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from django.http import HttpResponseRedirect
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -33,7 +34,7 @@ class RegisterView(generics.CreateAPIView):
 
 
 @extend_schema(tags=["Auth"])
-class ActivateUserView(APIView):
+class ActivateUserView(GenericAPIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(

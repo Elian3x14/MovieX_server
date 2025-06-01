@@ -69,7 +69,7 @@ urlpatterns = [
     path('users/bookings/pending/', UserPendingBookingView.as_view(), name='user-pending-bookings'),
     
     # payment
-    path('payments/zalo/pay/', ZaloPayPaymentView.as_view(), name='zalo-payment'),
+    path("bookings/<int:booking_id>/pay/zalo-pay/", ZaloPayPaymentView.as_view(), name="zalo-payment"),
 ]
 
 urlpatterns += router.urls

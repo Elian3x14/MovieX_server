@@ -8,13 +8,13 @@ import requests
 from django.conf import settings
 
 
-def create_zalopay_payment(booking_id: int, amount: int):
+def create_zalopay_payment(booking_id: int, amount: int,  app_trans_id: str = None) -> dict:
     """
     Gửi yêu cầu tạo đơn thanh toán tới ZaloPay Sandbox.
 
     Args:
         booking_id (int): ID của đơn đặt chỗ (Booking).
-        amount (int): Số tiền thanh toán (VND). Mặc định là 1.000.
+        amount (int): Số tiền thanh toán (VND).
 
     Returns:
         dict: Kết quả response từ ZaloPay.
@@ -22,7 +22,7 @@ def create_zalopay_payment(booking_id: int, amount: int):
     app_id = settings.ZALOPAY_APP_ID
     key1 = settings.ZALOPAY_KEY1
 
-    app_trans_id = time.strftime("%y%m%d") + "_" + str(int(time.time()))
+   
     app_user = f"user_{booking_id}"
     app_time = int(time.time() * 1000)
 
