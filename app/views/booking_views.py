@@ -185,6 +185,10 @@ class ZaloPayPaymentView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+# TODO: viết view để xử lý callback từ ZaloPay
+# This view will be called by ZaloPay when the payment status changes
+# Lưu thông tin callback vào cơ sở dữ liệu và cập nhật trạng thái đơn hàng
+
 
 @csrf_exempt
 def zalopay_callback(request):
