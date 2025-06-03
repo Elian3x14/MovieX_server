@@ -141,6 +141,7 @@ class Booking(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
     expired_at = models.DateTimeField(null=True, blank=True)
+    app_trans_id = models.CharField(max_length=64, null=True, blank=True)
     
 
     def __str__(self):

@@ -70,6 +70,7 @@ urlpatterns = [
     
     # payment
     path("bookings/<int:booking_id>/pay/zalo-pay/", ZaloPayPaymentView.as_view(), name="zalo-payment"),
+    path("payment/zalo_pay/callback/", ZaloPayCallbackView.as_view(), name="zalo-pay-callback"),
 ]
 
 urlpatterns += router.urls

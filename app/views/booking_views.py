@@ -3,6 +3,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from django.http import HttpResponseBadRequest
 from django.http import JsonResponse
 import json
 from django.utils import timezone
@@ -13,6 +14,9 @@ from asgiref.sync import async_to_sync
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+import requests
 import hmac
 import hashlib
 import time
@@ -24,6 +28,9 @@ from ..serializers import BookingSerializer, BookingDetailSerializer
 from ..models import Booking, Showtime, BookingSeat, Seat
 from ..payments import create_zalopay_payment
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 @extend_schema(tags=["Bookings"])
 class BookingGetOrCreateView(generics.CreateAPIView):
@@ -115,7 +122,7 @@ class AddBookingSeatView(GenericAPIView):
     def _notify_ws(self, showtime_id, seat_id, sender_id):
         channel_layer = get_channel_layer()
         group_name = f"booking_{showtime_id}"
-        print(f"send to group name: {group_name}")
+        logger.info(f"send to group name: {group_name}")
         async_to_sync(channel_layer.group_send)(
             group_name,
             {
@@ -172,8 +179,11 @@ class ZaloPayPaymentView(APIView):
             booking.id, int(booking.total_amount), app_trans_id=app_trans_id
         )
 
-        print("ZaloPay result:", result)
+        logger.info("ZaloPay result:", result)
         if result.get("return_code") == 1:
+            booking.app_trans_id = app_trans_id
+            booking.save(update_fields=["app_trans_id"])
+            
             return Response(
                 {
                     "order_url": result["order_url"],
@@ -185,34 +195,74 @@ class ZaloPayPaymentView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-# TODO: viết view để xử lý callback từ ZaloPay
-# This view will be called by ZaloPay when the payment status changes
-# Lưu thông tin callback vào cơ sở dữ liệu và cập nhật trạng thái đơn hàng
+@method_decorator(csrf_exempt, name="dispatch")
+class ZaloPayCallbackView(APIView):
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            logger.info("ZaloPay callback data:", data)
 
+            # Verify callback signature
+            callback_data = data["data"]
+            received_mac = data["mac"]
 
-@csrf_exempt
-def zalopay_callback(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        received_mac = data.get("mac")
-        callback_data = data.get("data")
+            key1 = settings.ZALOPAY_KEY1
+            raw_data = callback_data
+            hash_data = hmac.new(
+                key1.encode(), raw_data.encode(), hashlib.sha256
+            ).hexdigest()
 
-        # Tính toán lại MAC để xác thực
-        key2 = settings.ZALOPAY_KEY2
-        calculated_mac = hmac.new(
-            key2.encode(), callback_data.encode(), hashlib.sha256
-        ).hexdigest()
-
-        if hmac.compare_digest(received_mac, calculated_mac):
-            # Xử lý dữ liệu callback hợp lệ
+            if hash_data != received_mac:
+                return HttpResponseBadRequest("Invalid MAC")
+    
             callback_json = json.loads(callback_data)
             app_trans_id = callback_json.get("app_trans_id")
-            # Cập nhật trạng thái đơn hàng trong cơ sở dữ liệu
-            return JsonResponse({"return_code": 1, "return_message": "success"})
-        else:
-            return JsonResponse({"return_code": -1, "return_message": "invalid mac"})
-    return JsonResponse({"return_code": -1, "return_message": "invalid request"})
+            # TODO: Kiểm tra trạng thái thanh toán khi deploy
+            try:
+                booking = get_object_or_404(Booking, app_trans_id=app_trans_id)
+                if booking.status != "pending":
+                    booking.status = "paid"  # cập nhật trạng thái
+                    booking.save()                  
+                return JsonResponse({"return_code": 1, "return_message": "Success"})
+            except Booking.DoesNotExist:
+                return JsonResponse(
+                    {"return_code": 2, "return_message": "Booking not found"}
+                )
 
+        except Exception as e:
+            logger.error("ZaloPay callback error:", str(e))
+            return JsonResponse({"return_code": 3, "return_message": "Server error"})
+
+@extend_schema(tags=["Bookings"])
+class ZaloPayCheckStatusView(APIView):
+    def get(self, request, booking_id):
+        booking = get_object_or_404(Booking, id=booking_id)
+
+        app_trans_id = booking.app_trans_id  # bạn cần lưu app_trans_id khi tạo đơn
+        url = "https://sb-openapi.zalopay.vn/v2/query" # TODO: Chuyển sang URL chính thức khi deploy
+        payload = {
+            "app_id": settings.ZALOPAY_APP_ID,
+            "app_trans_id": app_trans_id
+        }
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+
+        response = requests.post(url, data=payload, headers=headers)
+        result = response.json()
+
+        if result.get("return_code") == 1:
+            # Có thể cập nhật trạng thái booking nếu cần
+            return Response({
+                "status": result["status"],  # 1 là đã thanh toán
+                "message": result["return_message"],
+                "amount": result["amount"],
+                "zp_trans_id": result["zp_trans_id"]
+            })
+        return Response({
+            "error": result.get("return_message", "Cannot check status")
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 @extend_schema(tags=["Users"])
 class UserPendingBookingView(APIView):

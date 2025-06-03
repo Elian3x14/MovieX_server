@@ -26,7 +26,9 @@ def create_zalopay_payment(booking_id: int, amount: int,  app_trans_id: str = No
     app_user = f"user_{booking_id}"
     app_time = int(time.time() * 1000)
 
-    embed_data = json.dumps({})
+    embed_data = json.dumps({
+        "redirecturl": settings.ZALOPAY_REDIRECT_URL
+    })
     items = json.dumps([])
 
     data_string = f"{app_id}|{app_trans_id}|{app_user}|{amount}|{app_time}|{embed_data}|{items}"
