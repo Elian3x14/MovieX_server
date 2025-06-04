@@ -144,10 +144,10 @@ class PasswordResetRequestView(APIView):
             subject="Đặt lại mật khẩu",
             to_email=user.email,
             template_name="emails/reset_password_email.html",
-            context={
-                "username": user.get_full_name() or user.username,
-                "reset_link": reset_url,
-            },
+                context={
+                    "username": user.get_full_name() or user.username,
+                    "reset_link": reset_url,
+                },
             from_email="noreply@example.com"
         )
 

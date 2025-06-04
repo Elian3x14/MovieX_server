@@ -147,8 +147,14 @@ REST_FRAMEWORK = {
     ],
 }
 
+# Email
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "localhost"
+EMAIL_PORT = 1025
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'noreply@example.com'
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", 3600))  # 1 hour
 
