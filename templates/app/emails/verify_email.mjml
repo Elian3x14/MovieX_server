@@ -5,17 +5,20 @@
     <mj-font name="Roboto" href="https://fonts.googleapis.com/css?family=Roboto" />
     <mj-style>
       .button {
-        background-color: #e50914;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 6px;
-        text-decoration: none;
-        display: inline-block;
-        font-weight: bold;
+      background-color: #e50914;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      display: inline-block;
+      font-weight: bold;
       }
     </mj-style>
+    <mj-attributes>
+      <mj-all font-family="Roboto, Arial, sans-serif" />
+    </mj-attributes>
   </mj-head>
-  <mj-body background-color="#f0f0f0" font-family="Roboto, Arial, sans-serif">
+  <mj-body background-color="#f0f0f0">
     <mj-section background-color="#ffffff" padding="20px">
       <mj-column width="100%">
         <mj-image width="120px" src="https://i.ibb.co/1G7fyV2/cinema-logo.png" alt="Cinema Logo" align="left" />

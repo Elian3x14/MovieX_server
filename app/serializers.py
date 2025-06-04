@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.core.mail import send_mail
 
+from .utils.send_mail import send_templated_email
 from .models import *
 
 
@@ -72,13 +73,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         activation_link = f"http://{host}/api/activate/{uid}/{token}/"
 
-        # Gửi mail
-        send_mail(
-            "Kích hoạt tài khoản",
-            f"Chào {user.username}, hãy nhấp vào liên kết sau để kích hoạt tài khoản:\n{activation_link}",
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
+        send_templated_email(
+            subject="Kích hoạt tài khoản",
+            to_email=user.email,
+            template_name="emails/activation_email.html",
+            context={
+                "username": user.get_full_name() or user.username,
+                "activation_link": activation_link,
+            },
+            from_email=settings.DEFAULT_FROM_EMAIL,
         )
         return user
 

@@ -9,6 +9,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
 
 from ..serializers import (
     RegisterSerializer,
@@ -19,7 +20,7 @@ from ..serializers import (
     PasswordResetConfirmSerializer,
     )
 from ..models import User
-from django.conf import settings
+from ..utils.send_mail import send_templated_email
 
 
 @extend_schema(tags=["Auth"])
@@ -138,13 +139,16 @@ class PasswordResetRequestView(APIView):
         # Đường dẫn giả định để người dùng reset
         reset_url = f"http://localhost:8000/api/reset-password/?token={token}&email={user.email}"
 
-        # Gửi mail giả (log vào console)
-        send_mail(
+        # Gửi email template HTML
+        send_templated_email(
             subject="Đặt lại mật khẩu",
-            message=f"Nhấn vào link sau để đặt lại mật khẩu: {reset_url}",
-            from_email="noreply@example.com",
-            recipient_list=[user.email],
-            fail_silently=False,
+            to_email=user.email,
+            template_name="emails/reset_password_email.html",
+            context={
+                "username": user.get_full_name() or user.username,
+                "reset_link": reset_url,
+            },
+            from_email="noreply@example.com"
         )
 
         return Response({"detail": "Đã gửi mail xác thực đặt lại mật khẩu."})

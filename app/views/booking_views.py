@@ -32,6 +32,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @extend_schema(tags=["Bookings"])
 class BookingGetOrCreateView(generics.CreateAPIView):
     serializer_class = BookingSerializer
@@ -183,7 +184,7 @@ class ZaloPayPaymentView(APIView):
         if result.get("return_code") == 1:
             booking.app_trans_id = app_trans_id
             booking.save(update_fields=["app_trans_id"])
-            
+
             return Response(
                 {
                     "order_url": result["order_url"],
@@ -194,6 +195,7 @@ class ZaloPayPaymentView(APIView):
             {"error": result.get("return_message", "ZaloPay error")},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
 
 @method_decorator(csrf_exempt, name="dispatch")
 class ZaloPayCallbackView(APIView):
@@ -214,7 +216,7 @@ class ZaloPayCallbackView(APIView):
 
             if hash_data != received_mac:
                 return HttpResponseBadRequest("Invalid MAC")
-    
+
             callback_json = json.loads(callback_data)
             app_trans_id = callback_json.get("app_trans_id")
             # TODO: Kiểm tra trạng thái thanh toán khi deploy
@@ -222,7 +224,7 @@ class ZaloPayCallbackView(APIView):
                 booking = get_object_or_404(Booking, app_trans_id=app_trans_id)
                 if booking.status != "pending":
                     booking.status = "paid"  # cập nhật trạng thái
-                    booking.save()                  
+                    booking.save()
                 return JsonResponse({"return_code": 1, "return_message": "Success"})
             except Booking.DoesNotExist:
                 return JsonResponse(
@@ -233,36 +235,36 @@ class ZaloPayCallbackView(APIView):
             logger.error("ZaloPay callback error:", str(e))
             return JsonResponse({"return_code": 3, "return_message": "Server error"})
 
+
 @extend_schema(tags=["Bookings"])
 class ZaloPayCheckStatusView(APIView):
     def get(self, request, booking_id):
         booking = get_object_or_404(Booking, id=booking_id)
 
         app_trans_id = booking.app_trans_id  # bạn cần lưu app_trans_id khi tạo đơn
-        url = "https://sb-openapi.zalopay.vn/v2/query" # TODO: Chuyển sang URL chính thức khi deploy
-        payload = {
-            "app_id": settings.ZALOPAY_APP_ID,
-            "app_trans_id": app_trans_id
-        }
+        url = "https://sb-openapi.zalopay.vn/v2/query"  # TODO: Chuyển sang URL chính thức khi deploy
+        payload = {"app_id": settings.ZALOPAY_APP_ID, "app_trans_id": app_trans_id}
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         response = requests.post(url, data=payload, headers=headers)
         result = response.json()
 
         if result.get("return_code") == 1:
             # Có thể cập nhật trạng thái booking nếu cần
-            return Response({
-                "status": result["status"],  # 1 là đã thanh toán
-                "message": result["return_message"],
-                "amount": result["amount"],
-                "zp_trans_id": result["zp_trans_id"]
-            })
-        return Response({
-            "error": result.get("return_message", "Cannot check status")
-        }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "status": result["status"],  # 1 là đã thanh toán
+                    "message": result["return_message"],
+                    "amount": result["amount"],
+                    "zp_trans_id": result["zp_trans_id"],
+                }
+            )
+        return Response(
+            {"error": result.get("return_message", "Cannot check status")},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 @extend_schema(tags=["Users"])
 class UserPendingBookingView(APIView):
@@ -301,3 +303,31 @@ class UserPendingBookingView(APIView):
         booking.save(update_fields=["total_amount"])
         serializer = BookingDetailSerializer(booking)
         return Response(serializer.data)
+
+
+from ..utils.send_mail import send_templated_email
+
+
+class TestSendMailView(APIView):
+    def get(self, request):
+        subject = "Test Email Subject"
+        to_email = "thliem143@gmail.com"
+        context = {"confirmation_link": "https://example.com/confirm?token"}
+        template_name = "emails/ticket_email.html"
+
+        if not subject or not to_email:
+            return Response(
+                {"error": "Missing subject or to_email"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        send_templated_email(
+            subject=subject,
+            to_email=to_email,
+            template_name=template_name,
+            context=context,
+        )
+        return Response(
+            {"message": "Email sent successfully!"}, status=status.HTTP_200_OK
+        )
+        

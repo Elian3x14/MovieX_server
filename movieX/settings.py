@@ -62,7 +62,10 @@ ROOT_URLCONF = "movieX.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+            BASE_DIR / "templates",
+            BASE_DIR / "templates" / "app",
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -73,6 +76,8 @@ TEMPLATES = [
         },
     },
 ]
+
+print("Using templates directory:", BASE_DIR / "templates")
 
 WSGI_APPLICATION = "movieX.wsgi.application"
 
@@ -122,8 +127,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -177,4 +182,6 @@ ZALOPAY_KEY1 = os.getenv("ZALOPAY_KEY1")
 ZALOPAY_KEY2 = os.getenv("ZALOPAY_KEY2")
 ZALOPAY_SANDBOX_ENDPOINT = os.getenv("ZALOPAY_SANDBOX_ENDPOINT")
 ZALOPAY_CALLBACK_URL = os.getenv("ZALOPAY_CALLBACK_URL")
-ZALOPAY_REDIRECT_URL = os.getenv("ZALOPAY_REDIRECT_URL", "http://localhost:8000/bookings/zalopay/callback")
+ZALOPAY_REDIRECT_URL = os.getenv(
+    "ZALOPAY_REDIRECT_URL", "http://localhost:8000/bookings/zalopay/callback"
+)
