@@ -16,7 +16,9 @@ from rest_framework.generics import GenericAPIView
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
-import requests
+import urllib.parse
+import urllib.request
+
 import hmac
 import hashlib
 import time
@@ -241,29 +243,60 @@ class ZaloPayCheckStatusView(APIView):
     def get(self, request, booking_id):
         booking = get_object_or_404(Booking, id=booking_id)
 
-        app_trans_id = booking.app_trans_id  # bạn cần lưu app_trans_id khi tạo đơn
-        url = "https://sb-openapi.zalopay.vn/v2/query"  # TODO: Chuyển sang URL chính thức khi deploy
-        payload = {"app_id": settings.ZALOPAY_APP_ID, "app_trans_id": app_trans_id}
+        app_id = str(settings.ZALOPAY_APP_ID)
+        key1 = settings.ZALOPAY_KEY1
+        endpoint = settings.ZALOPAY_QUERY_URL  # https://sb-openapi.zalopay.vn/v2/query
 
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        app_trans_id = booking.app_trans_id  # ví dụ: "250608_1749396210"
 
-        response = requests.post(url, data=payload, headers=headers)
-        result = response.json()
+        # Tạo MAC theo mẫu của ZaloPay
+        data_string = f"{app_id}|{app_trans_id}|{key1}"
+        mac = hmac.new(key1.encode(), data_string.encode(), hashlib.sha256).hexdigest()
 
-        if result.get("return_code") == 1:
-            # Có thể cập nhật trạng thái booking nếu cần
+        # Tạo payload
+        payload = {
+            "app_id": app_id,
+            "app_trans_id": app_trans_id,
+            "mac": mac,
+        }
+
+        try:
+            # Encode payload theo dạng form-urlencoded
+            encoded_data = urllib.parse.urlencode(payload).encode()
+
+            # Gửi POST request
+            req = urllib.request.Request(endpoint, data=encoded_data)
+            req.add_header("Content-Type", "application/x-www-form-urlencoded")
+
+            with urllib.request.urlopen(req) as response:
+                response_data = json.loads(response.read())
+
+            # Kiểm tra kết quả
+            if response_data.get("return_code") == 1:
+                return Response(
+                    {
+                        "status": response_data.get("status"),
+                        "amount": response_data.get("amount"),
+                        "discount_amount": response_data.get("discount_amount"),
+                        "zp_trans_id": response_data.get("zp_trans_id"),
+                        "return_message": response_data.get("return_message"),
+                        "processing": response_data.get("is_processing"),
+                    }
+                )
+
             return Response(
                 {
-                    "status": result["status"],  # 1 là đã thanh toán
-                    "message": result["return_message"],
-                    "amount": result["amount"],
-                    "zp_trans_id": result["zp_trans_id"],
-                }
+                    "error": response_data.get("return_message", "Không thể kiểm tra"),
+                    "sub_return_code": response_data.get("sub_return_code"),
+                    "sub_return_message": response_data.get("sub_return_message"),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        return Response(
-            {"error": result.get("return_message", "Cannot check status")},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 @extend_schema(tags=["Users"])
@@ -330,4 +363,3 @@ class TestSendMailView(APIView):
         return Response(
             {"message": "Email sent successfully!"}, status=status.HTTP_200_OK
         )
-        

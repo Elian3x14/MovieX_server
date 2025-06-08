@@ -153,7 +153,7 @@ EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
-DEFAULT_FROM_EMAIL = 'noreply@example.com'
+DEFAULT_FROM_EMAIL = "noreply@example.com"
 
 
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", 3600))  # 1 hour
@@ -187,7 +187,11 @@ ZALOPAY_APP_ID = os.getenv("ZALOPAY_APP_ID")
 ZALOPAY_KEY1 = os.getenv("ZALOPAY_KEY1")
 ZALOPAY_KEY2 = os.getenv("ZALOPAY_KEY2")
 ZALOPAY_SANDBOX_ENDPOINT = os.getenv("ZALOPAY_SANDBOX_ENDPOINT")
+ZALOPAY_QUERY_URL = os.getenv(
+    "ZALOPAY_QUERY_URL", "https://sandbox.zalopay.com.vn/v2/query"
+)
 ZALOPAY_CALLBACK_URL = os.getenv("ZALOPAY_CALLBACK_URL")
 ZALOPAY_REDIRECT_URL = os.getenv(
     "ZALOPAY_REDIRECT_URL", "http://localhost:8000/bookings/zalopay/callback"
 )
+

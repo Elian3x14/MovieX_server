@@ -8,7 +8,9 @@ import requests
 from django.conf import settings
 
 
-def create_zalopay_payment(booking_id: int, amount: int,  app_trans_id: str = None) -> dict:
+def create_zalopay_payment(
+    booking_id: int, amount: int, app_trans_id: str = None
+) -> dict:
     """
     Gửi yêu cầu tạo đơn thanh toán tới ZaloPay Sandbox.
 
@@ -22,16 +24,15 @@ def create_zalopay_payment(booking_id: int, amount: int,  app_trans_id: str = No
     app_id = settings.ZALOPAY_APP_ID
     key1 = settings.ZALOPAY_KEY1
 
-   
     app_user = f"user_{booking_id}"
     app_time = int(time.time() * 1000)
 
-    embed_data = json.dumps({
-        "redirecturl": settings.ZALOPAY_REDIRECT_URL
-    })
+    embed_data = json.dumps({"redirecturl": settings.ZALOPAY_REDIRECT_URL})
     items = json.dumps([])
 
-    data_string = f"{app_id}|{app_trans_id}|{app_user}|{amount}|{app_time}|{embed_data}|{items}"
+    data_string = (
+        f"{app_id}|{app_trans_id}|{app_user}|{amount}|{app_time}|{embed_data}|{items}"
+    )
     mac = hmac.new(key1.encode(), data_string.encode(), hashlib.sha256).hexdigest()
 
     order_payload = {
@@ -45,7 +46,7 @@ def create_zalopay_payment(booking_id: int, amount: int,  app_trans_id: str = No
         "item": items,
         "callback_url": settings.ZALOPAY_CALLBACK_URL,
         "description": f"Thanh toán đơn hàng #{booking_id}",
-        "mac": mac
+        "mac": mac,
     }
 
     response = requests.post(settings.ZALOPAY_SANDBOX_ENDPOINT, data=order_payload)

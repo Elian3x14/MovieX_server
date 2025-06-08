@@ -70,6 +70,7 @@ urlpatterns = [
     
     # payment
     path("bookings/<int:booking_id>/pay/zalo-pay/", ZaloPayPaymentView.as_view(), name="zalo-payment"),
+    path("bookings/<int:booking_id>/pay/zalo-pay/status", ZaloPayCheckStatusView.as_view(), name="zalo-payment-status"),
     path("payment/zalo_pay/callback/", ZaloPayCallbackView.as_view(), name="zalo-pay-callback"),
     # test
     path('test-send-mail/', TestSendMailView.as_view(), name='test-send-mail'),
