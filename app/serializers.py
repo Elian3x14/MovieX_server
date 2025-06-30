@@ -132,9 +132,21 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class CinemaSerializer(serializers.ModelSerializer):
+    # full_address = serializers.CharField(read_only=True)
+    number_of_rooms = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Cinema
-        fields = ["id", "name", "address", "city"]
+        fields = [
+            'id',
+            'name',
+            'street',
+            'ward',
+            'district',
+            'city',
+            # 'full_address',
+            'number_of_rooms'
+        ]
 
 
 class RoomSerializer(serializers.ModelSerializer):

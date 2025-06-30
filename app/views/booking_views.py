@@ -245,7 +245,7 @@ class ZaloPayCheckStatusView(APIView):
 
         app_id = str(settings.ZALOPAY_APP_ID)
         key1 = settings.ZALOPAY_KEY1
-        endpoint = settings.ZALOPAY_QUERY_URL  # https://sb-openapi.zalopay.vn/v2/query
+        endpoint = settings.ZALOPAY_QUERY_URL  
 
         app_trans_id = booking.app_trans_id  # ví dụ: "250608_1749396210"
 
@@ -270,12 +270,13 @@ class ZaloPayCheckStatusView(APIView):
 
             with urllib.request.urlopen(req) as response:
                 response_data = json.loads(response.read())
-
+                logger.info("ZaloPay check status response:", response_data)
+                print("ZaloPay check status response:", response_data)
             # Kiểm tra kết quả
             if response_data.get("return_code") == 1:
                 return Response(
                     {
-                        "status": response_data.get("status"),
+                        "status": response_data.get("return_code"),
                         "amount": response_data.get("amount"),
                         "discount_amount": response_data.get("discount_amount"),
                         "zp_trans_id": response_data.get("zp_trans_id"),

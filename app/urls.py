@@ -10,9 +10,11 @@ router.register(r"booking-seats", BookingSeatViewSet, basename="booking-seat")
 router.register(r"actors", ActorViewSet)
 router.register(r"genres", GenreViewSet)
 router.register(r"reviews", ReviewViewSet, basename="review")
+router.register(r"movies", MovieViewSet, basename="movie")
+router.register(r"cinemas", CinemaViewSet, basename="cinema")
 
 urlpatterns = [
-    #
+    # auth
     path("register/", RegisterView.as_view(), name="register"),
     path("activate/<uidb64>/<token>/", ActivateUserView.as_view(), name="activate"),
     path("login/", EmailLoginView.as_view(), name="token_obtain_pair"),
@@ -22,27 +24,12 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("password-reset/", PasswordResetRequestView.as_view()),
     path("password-reset-confirm/", PasswordResetConfirmView.as_view()),
-    #
-    path("movies/", MovieListView.as_view()),
-    path("movies/create/", MovieCreateView.as_view()),
-    path("movies/<int:id>/", MovieDetailView.as_view()),
-    path(
-        "movies/<int:id>/",
-        MovieUpdateDeleteView.as_view(),
-        name="movie-edit-delete",
-    ),
+    #   
     path("movies/<int:movie_id>/showtimes/", ShowtimeListView.as_view()),
     path(
         "movies/<int:movie_id>/reviews/",
         MovieReviewList.as_view(),
         name="movie-reviews",
-    ),
-    #
-    path("cinemas/", CinemaListCreateView.as_view(), name="cinema-list-create"),
-    path(
-        "cinemas/<int:pk>/",
-        CinemaRetrieveUpdateDestroyView.as_view(),
-        name="cinema-detail",
     ),
     #
     path("showtimes/create/", ShowtimeCreateView.as_view()),

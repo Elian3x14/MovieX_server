@@ -83,14 +83,27 @@ class Movie(models.Model):
 
 class Cinema(models.Model):
     name = models.CharField(max_length=100)
-    address = models.TextField()
-    city = models.CharField(max_length=100)
-
+    
+    # Tách địa chỉ
+    street = models.CharField(max_length=200, default="")
+    ward = models.CharField(max_length=100, blank=True, null=True, default="")
+    district = models.CharField(max_length=100, blank=True, null=True, default="")
+    city = models.CharField(max_length=100, blank=True, null=True, default="")
+    
     def __str__(self):
         return self.name
 
+    @property
+    def full_address(self):
+        parts = [self.street, self.ward, self.district, self.city]
+        return ', '.join(part for part in parts if part)
+    
+    @property
+    def number_of_rooms(self):
+        return self.rooms.count()  # Nếu liên kết là related_name="rooms"
+
 class Room(models.Model):
-    cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE)
+    cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE, related_name="rooms")
     name = models.CharField(max_length=50)
     total_seats = models.PositiveIntegerField()
 

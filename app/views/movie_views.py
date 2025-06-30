@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, viewsets
 from drf_spectacular.utils import extend_schema
 
 from django.utils import timezone
@@ -6,35 +6,14 @@ from django.utils import timezone
 from ..serializers import MovieSerializer, ShowtimeSerializer, ReviewSerializer
 from ..pagination import MovieReviewPagination
 from ..models import Movie, Showtime, Review
-
-
-@extend_schema(tags=["Movies"])
-class MovieListView(generics.ListAPIView):
-    queryset = Movie.objects.all()
-    serializer_class = MovieSerializer
-    permission_classes = [permissions.AllowAny]  # Không cần đăng nhập
-
+from ..permissions import IsAdminOrReadOnly
 
 @extend_schema(tags=["Movies"])
-class MovieDetailView(generics.RetrieveAPIView):
+class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-    permission_classes = [permissions.AllowAny]  # Không cần đăng nhập
-    lookup_field = "id"  # Mặc định là 'pk', bạn dùng 'id' nếu muốn rõ ràng hơn
-
-
-@extend_schema(tags=["Movies"])
-class MovieCreateView(generics.CreateAPIView):
-    queryset = Movie.objects.all()
-    serializer_class = MovieSerializer
-    permission_classes = [permissions.IsAdminUser]
-
-
-@extend_schema(tags=["Movies"])
-class MovieUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Movie.objects.all()
-    serializer_class = MovieSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminOrReadOnly]
+    lookup_field = "id"  # Nếu bạn muốn dùng `id` thay vì mặc định `pk`
 
 @extend_schema(tags=["Movies"])
 class ShowtimeListView(generics.ListAPIView):
