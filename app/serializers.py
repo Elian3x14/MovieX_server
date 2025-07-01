@@ -148,27 +148,33 @@ class CinemaSerializer(serializers.ModelSerializer):
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    cinema = CinemaSerializer(read_only=True)
     cinema_id = serializers.PrimaryKeyRelatedField(
         queryset=Cinema.objects.all(),
-        write_only=True
     )
+
+    total_seats = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Room
-        fields = ["id", "cinema", "cinema_id", "name", "total_seats"]
-    
+        fields = ["id", "cinema_id", "name", "no_row", "no_column", "total_seats"]
+
     def create(self, validated_data):
         cinema = validated_data.pop("cinema_id")
-        return Room.objects.create(cinema=cinema, **validated_data)
+        room = Room.objects.create(cinema=cinema, **validated_data)
+        room.create_seats()  # gọi hàm sinh ghế sau khi tạo room
+        return room
 
     def update(self, instance, validated_data):
         cinema = validated_data.pop("cinema_id", None)
         if cinema is not None:
             instance.cinema = cinema
+
         instance.name = validated_data.get("name", instance.name)
-        instance.total_seats = validated_data.get("total_seats", instance.total_seats)
+        instance.no_row = validated_data.get("no_row", instance.no_row)
+        instance.no_column = validated_data.get("no_column", instance.no_column)
         instance.save()
+
+        # Có thể thêm logic reset ghế nếu cần
         return instance
 
 class ShowtimeSerializer(serializers.ModelSerializer):
@@ -185,6 +191,26 @@ class SeatTypeSerializer(serializers.ModelSerializer):
         model = SeatType
         fields = "__all__"
 
+class RoomSeatSerializer(serializers.ModelSerializer):
+    seat_type_id = serializers.PrimaryKeyRelatedField(
+        source='seat_type',
+        queryset=Seat.seat_type.field.related_model.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    seat_type_name = serializers.CharField(source='seat_type.name', read_only=True)
+
+    class Meta:
+        model = Seat
+        fields = [
+            'id',
+            'room',           # ID phòng (room_id)
+            'seat_row',
+            'seat_col',
+            'seat_type_id',
+            'seat_type_name',
+        ]
+        read_only_fields = ['id', 'room', 'seat_type_name']
 
 class SeatSerializer(serializers.ModelSerializer):
     SEAT_STATUS_CHOICES = (

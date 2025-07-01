@@ -32,6 +32,8 @@ urlpatterns = [
         name="movie-reviews",
     ),
     #
+    path("rooms/<int:id>/seats/", SeatByRoomView.as_view(), name="room-seat-list"),
+    #
     path("showtimes/create/", ShowtimeCreateView.as_view()),
     path("showtimes/<int:pk>/", ShowtimeDetailView.as_view()),
     path("showtimes/<int:showtime_id>/seats/", AvailableSeatsView.as_view()),
