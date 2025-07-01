@@ -132,7 +132,6 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class CinemaSerializer(serializers.ModelSerializer):
-    # full_address = serializers.CharField(read_only=True)
     number_of_rooms = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -144,18 +143,33 @@ class CinemaSerializer(serializers.ModelSerializer):
             'ward',
             'district',
             'city',
-            # 'full_address',
             'number_of_rooms'
         ]
 
 
 class RoomSerializer(serializers.ModelSerializer):
     cinema = CinemaSerializer(read_only=True)
+    cinema_id = serializers.PrimaryKeyRelatedField(
+        queryset=Cinema.objects.all(),
+        write_only=True
+    )
 
     class Meta:
         model = Room
-        fields = ["id", "cinema", "name", "total_seats"]
+        fields = ["id", "cinema", "cinema_id", "name", "total_seats"]
+    
+    def create(self, validated_data):
+        cinema = validated_data.pop("cinema_id")
+        return Room.objects.create(cinema=cinema, **validated_data)
 
+    def update(self, instance, validated_data):
+        cinema = validated_data.pop("cinema_id", None)
+        if cinema is not None:
+            instance.cinema = cinema
+        instance.name = validated_data.get("name", instance.name)
+        instance.total_seats = validated_data.get("total_seats", instance.total_seats)
+        instance.save()
+        return instance
 
 class ShowtimeSerializer(serializers.ModelSerializer):
     movie = MovieSerializer(read_only=True)
