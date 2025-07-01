@@ -136,6 +136,7 @@ class Seat(models.Model):
     seat_type = models.ForeignKey(
         SeatType, on_delete=models.SET_NULL, null=True, blank=True
     )
+    is_maintenance = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("room", "seat_row", "seat_col")
