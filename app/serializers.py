@@ -247,8 +247,8 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["id", "user", "showtime", "status", "expired_at", "booking_seats"]
-        read_only_fields = ["id", "user", "status", "expired_at", "booking_seats"]
+        fields = ["id", "user", "showtime", "status", "booking_seats"]
+        read_only_fields = ["id", "user", "status",  "booking_seats"]
 
 class BookingDetailSerializer(serializers.ModelSerializer):
     showtime = ShowtimeSerializer(read_only=True)

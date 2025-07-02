@@ -1,13 +1,12 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView
+from django.views import View
 from rest_framework.response import Response
 from django.http import HttpResponseRedirect
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.utils.http import urlsafe_base64_decode
-from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 
@@ -35,7 +34,7 @@ class RegisterView(generics.CreateAPIView):
 
 
 @extend_schema(tags=["Auth"])
-class ActivateUserView(GenericAPIView):
+class ActivateUserView(View):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
