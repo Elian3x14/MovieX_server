@@ -1,13 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
+from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
 
-# Regex cho số điện thoại Việt Nam: 10 số, bắt đầu bằng 03, 05, 07, 08, 09
-vietnam_phone_regex = RegexValidator(
-    regex=r"^(03|05|07|08|09)\d{8}$",
-    message="Số điện thoại không hợp lệ. Vui lòng nhập số 10 chữ số bắt đầu bằng 03, 05, 07, 08, hoặc 09.",
-)
+from .regexs import vietnam_phone_regex
 
 
 class User(AbstractUser):
@@ -34,32 +34,62 @@ class User(AbstractUser):
 
 class Genre(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=110, unique=True, blank=True, null=True)
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Nếu chưa có slug hoặc tên thay đổi
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+
+            # Đảm bảo slug là duy nhất
+            while Genre.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
 
 
 class Actor(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=110, unique=True, blank=True, null=True)
 
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+
+            # Đảm bảo slug không trùng
+            while Actor.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
+
 
 class Movie(models.Model):
-    NOW_SHOWING = "now-showing"
-    COMING_SOON = "coming-soon"
-    RELEASE_STATUS_CHOICES = [
-        (NOW_SHOWING, "Now Showing"),
-        (COMING_SOON, "Coming Soon"),
-    ]
-
+    # Tiêu đề
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    # Hình ảnh poster
     poster_url = models.URLField(blank=False)
+    # Video trailer
     trailer_url = models.URLField(blank=True)
+    # Hình nền (backdrop)
     backdrop_url = models.URLField(blank=True)
-    genres = models.ManyToManyField(Genre, related_name="movies")
+    # Đánh giá phim (0.0 - 10.0)
     rating = models.DecimalField(
         max_digits=3,
         decimal_places=1,
@@ -68,20 +98,32 @@ class Movie(models.Model):
     )
     duration = models.PositiveIntegerField()  # in minutes
     year = models.PositiveIntegerField()  # in YYYY format
-    director = models.CharField(max_length=100)
+    director = models.CharField(max_length=100)  # Đạo diễn phim
+
+    genres = models.ManyToManyField(Genre, related_name="movies")
     actors = models.ManyToManyField(Actor, related_name="movies")
-    release_date = models.DateField()
-    release_status = models.CharField(
-        max_length=20,
-        choices=RELEASE_STATUS_CHOICES,
-        default=COMING_SOON,
-    )
+
+    release_date = models.DateField()  # Ngày phát hành phim
+    # Tạo slug tự động từ tiêu đề
+    slug = models.SlugField(max_length=210, unique=True, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            while Movie.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
 
 
 class Cinema(models.Model):
+    # Tên rạp chiếu
     name = models.CharField(max_length=100)
 
     # Tách địa chỉ
@@ -94,17 +136,13 @@ class Cinema(models.Model):
         return self.name
 
     @property
-    def full_address(self):
-        parts = [self.street, self.ward, self.district, self.city]
-        return ", ".join(part for part in parts if part)
-
-    @property
     def number_of_rooms(self):
         return self.rooms.count()  # Nếu liên kết là related_name="rooms"
 
 
 class Room(models.Model):
     cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE, related_name="rooms")
+    # Tên phòng chiếu
     name = models.CharField(max_length=50)
     no_row = models.PositiveIntegerField(default=1)  # số hàng
     no_column = models.PositiveIntegerField(default=1)  # số cột
@@ -125,6 +163,10 @@ class Room(models.Model):
 
 class SeatType(models.Model):
     name = models.CharField(max_length=50)  # VD: VIP, Standard, Couple
+    short_name = models.CharField(
+        max_length=10, null=True, default=""
+    )  # VD: VIP, STD, COUPLE
+
     def __str__(self):
         return self.name
 
@@ -149,7 +191,9 @@ class SeatPrice(models.Model):
     showtime = models.ForeignKey(
         "Showtime", on_delete=models.CASCADE, related_name="seat_prices"
     )
-    seat_type = models.ForeignKey(SeatType, on_delete=models.CASCADE)
+    seat_type = models.ForeignKey(
+        SeatType, on_delete=models.CASCADE, related_name="seat_prices"
+    )
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
@@ -160,40 +204,62 @@ class SeatPrice(models.Model):
 
 
 class Showtime(models.Model):
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name="showtimes")
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="showtimes")
     start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    end_time = models.DateTimeField() # Tính toán từ start_time và duration của movie
 
     def __str__(self):
         return f"{self.movie.title} - {self.room.name} - {self.start_time.strftime('%Y-%m-%d %H:%M')}"
 
+class BookingStatus(models.TextChoices):
+    # Đang giữ ghế, khi người dùng đặt vé,
+    # hệ thống sẽ giữ ghế trong một khoảng thời gian nhất định
+    # tức là booking sẽ có trạng thái PENDING và phiên chưa hết hạn (expired_at > now)
+    PENDING_TO_SELECT_SEAT = "pending_to_select_seat", "Pending to Select Seat"
+    # Trạng thái khi người dùng đã đặt vé nhưng chưa thanh toán
+    # và hệ thống đã giữ ghế trong một khoảng thời gian nhất định
+    PENDING_TO_PAY = "pending_to_pay", "Pending to Pay"
+    # Trạng thái khi người dùng đã thanh toán thành công
+    # và hệ thống đã xác nhận thanh toán 
+    PAID = "paid", "Paid"
+    # Trạng thái khi người dùng đã sử dụng vé (đã xem phim)
+    USED = "used", "Used"
+    # Trạng thái khi người dùng đã hủy vé đã đặt
+    # và hệ thống đã hoàn tiền (nếu có) 
+    CANCELLED = "cancelled", "Cancelled"
+    
 
 class Booking(models.Model):
-    STATUS_CHOICES = (
-        ("pending", "Pending"),
-        ("paid", "Paid"),
-        ("expired", "Expired"),
-        ("cancelled", "Cancelled"),
-    )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     showtime = models.ForeignKey(Showtime, on_delete=models.CASCADE)
     booking_time = models.DateTimeField(auto_now_add=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
-    expired_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=32,
+        choices=BookingStatus.choices,
+        default=BookingStatus.PENDING_TO_SELECT_SEAT,
+        verbose_name="Trạng thái đặt vé",
+    )
+    # Thời gian hết hạn để người dùng chọn ghế
+    select_seat_expired_at = models.DateTimeField(null=True, blank=True)
+    # Thời gian hết hạn để người dùng thanh toán
+    pay_expired_at = models.DateTimeField(null=True, blank=True)
     app_trans_id = models.CharField(max_length=64, null=True, blank=True)
 
     def __str__(self):
         return f"Booking {self.id} - {self.user.email} - {self.showtime.movie.title} - {self.booking_time.strftime('%Y-%m-%d %H:%M')}"
 
-
 class BookingSeat(models.Model):
+    """
+    Chi tiết ghế được đặt trong một Booking
+    Tương tự như OrderDetail (n-1) Order trong thương mại điện tử
+    """
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name="booking_seats"
     )
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
+    # giá đã chốt, tính từ giá ghế tại thời điểm đặt vé
     final_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
     class Meta:

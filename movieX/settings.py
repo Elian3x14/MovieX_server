@@ -195,3 +195,8 @@ ZALOPAY_REDIRECT_URL = os.getenv(
     "ZALOPAY_REDIRECT_URL", "http://localhost:8000/bookings/zalopay/callback"
 )
 
+# App logic
+
+SELECT_SEAT_EXPIRED_MINUTES = int(os.getenv("SELECT_SEAT_EXPIRED_MINUTES", 5))
+PAY_EXPIRED_MINUTES = int(os.getenv("PAY_EXPIRED_MINUTES", 15))
+ 

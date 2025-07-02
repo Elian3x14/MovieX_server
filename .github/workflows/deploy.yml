@@ -1,0 +1,33 @@
+name: Deploy Django with Uvicorn
+
+on:
+  push:
+    branches: [deploy]  # Chỉ kích hoạt khi push lên nhánh deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source # Kéo mã nguồn từ kho lưu trữ
+        uses: actions/checkout@v3
+
+      - name: Setup SSH # Thiết lập SSH để kết nối đến VPS
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Deploy to VPS # Triển khai mã nguồn lên VPS
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+         ssh -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
+            cd /home/$USER/moviex-server
+            git pull origin deploy
+            source venv/bin/activate
+            pip3 install -r requirements.txt
+            python3 manage.py migrate
+            python3 manage.py collectstatic --noinput
+            sudo systemctl restart uvicorn
+          EOF
