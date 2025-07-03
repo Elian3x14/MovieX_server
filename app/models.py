@@ -166,7 +166,9 @@ class SeatType(models.Model):
     short_name = models.CharField(
         max_length=10, null=True, default=""
     )  # VD: VIP, STD, COUPLE
-
+    color = models.CharField(
+        max_length=7, default="#FFFFFF"
+    )  # Mã màu HEX cho ghế
     def __str__(self):
         return self.name
 
