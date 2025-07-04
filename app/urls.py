@@ -24,15 +24,14 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("password-reset/", PasswordResetRequestView.as_view()),
     path("password-reset-confirm/", PasswordResetConfirmView.as_view()),
-    #   
+    #
     path("movies/<int:movie_id>/showtimes/", ShowtimeListView.as_view()),
     path(
         "movies/<int:movie_id>/reviews/",
         MovieReviewList.as_view(),
         name="movie-reviews",
     ),
-    #
-    path("rooms/<int:id>/seats/", SeatByRoomView.as_view(), name="room-seat-list"),
+    path("rooms/<int:room_id>/seats/", SeatByRoomView.as_view(), name="room-seat-list"),
     #
     path("showtimes/create/", ShowtimeCreateView.as_view()),
     path("showtimes/<int:pk>/", ShowtimeDetailView.as_view()),
@@ -55,14 +54,29 @@ urlpatterns = [
         RemoveBookingSeatView.as_view(),
     ),
     # User-specific bookings
-    path('users/bookings/pending/', UserPendingBookingView.as_view(), name='user-pending-bookings'),
-    
+    path(
+        "users/bookings/pending/",
+        UserPendingBookingView.as_view(),
+        name="user-pending-bookings",
+    ),
     # payment
-    path("bookings/<int:booking_id>/pay/zalo-pay/", ZaloPayPaymentView.as_view(), name="zalo-payment"),
-    path("bookings/<int:booking_id>/pay/zalo-pay/status", ZaloPayCheckStatusView.as_view(), name="zalo-payment-status"),
-    path("payment/zalo_pay/callback/", ZaloPayCallbackView.as_view(), name="zalo-pay-callback"),
+    path(
+        "bookings/<int:booking_id>/pay/zalo-pay/",
+        ZaloPayPaymentView.as_view(),
+        name="zalo-payment",
+    ),
+    path(
+        "bookings/<int:booking_id>/pay/zalo-pay/status",
+        ZaloPayCheckStatusView.as_view(),
+        name="zalo-payment-status",
+    ),
+    path(
+        "payment/zalo_pay/callback/",
+        ZaloPayCallbackView.as_view(),
+        name="zalo-pay-callback",
+    ),
     # test
-    path('test-send-mail/', TestSendMailView.as_view(), name='test-send-mail'),
+    path("test-send-mail/", TestSendMailView.as_view(), name="test-send-mail"),
 ]
 
 urlpatterns += router.urls

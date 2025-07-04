@@ -136,15 +136,7 @@ class CinemaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cinema
-        fields = [
-            'id',
-            'name',
-            'street',
-            'ward',
-            'district',
-            'city',
-            'number_of_rooms'
-        ]
+        fields = ["id", "name", "street", "ward", "district", "city", "number_of_rooms"]
 
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -177,6 +169,7 @@ class RoomSerializer(serializers.ModelSerializer):
         # Có thể thêm logic reset ghế nếu cần
         return instance
 
+
 class ShowtimeSerializer(serializers.ModelSerializer):
     movie = MovieSerializer(read_only=True)
     room = RoomSerializer(read_only=True)
@@ -191,26 +184,13 @@ class SeatTypeSerializer(serializers.ModelSerializer):
         model = SeatType
         fields = "__all__"
 
-class RoomSeatSerializer(serializers.ModelSerializer):
-    seat_type_id = serializers.PrimaryKeyRelatedField(
-        source='seat_type',
-        queryset=Seat.seat_type.field.related_model.objects.all(),
-        required=False,
-        allow_null=True
-    )
-    seat_type_name = serializers.CharField(source='seat_type.name', read_only=True)
+
+class SeatRoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Seat
-        fields = [
-            'id',
-            'room',           # ID phòng (room_id)
-            'seat_row',
-            'seat_col',
-            'seat_type_id',
-            'seat_type_name',
-        ]
-        read_only_fields = ['id', 'room', 'seat_type_name']
+        fields = "__all__"
+
 
 class SeatSerializer(serializers.ModelSerializer):
     SEAT_STATUS_CHOICES = (
@@ -242,20 +222,22 @@ class BookingSeatSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     showtime = serializers.PrimaryKeyRelatedField(
         queryset=Showtime.objects.all(), write_only=True
-    )    
+    )
     booking_seats = BookingSeatSerializer(many=True, read_only=True)
 
     class Meta:
         model = Booking
         fields = ["id", "user", "showtime", "status", "booking_seats"]
-        read_only_fields = ["id", "user", "status",  "booking_seats"]
+        read_only_fields = ["id", "user", "status", "booking_seats"]
+
 
 class BookingDetailSerializer(serializers.ModelSerializer):
     showtime = ShowtimeSerializer(read_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'showtime', 'status', 'expired_at', 'total_amount']
+        fields = ["id", "showtime", "status", "expired_at", "total_amount"]
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
