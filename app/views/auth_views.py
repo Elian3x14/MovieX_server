@@ -9,6 +9,10 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
+from django.shortcuts import redirect
+import requests
+from google.auth.transport import requests as grequests
+from google.oauth2 import id_token
 
 from ..serializers import (
     RegisterSerializer,
@@ -180,3 +184,74 @@ class PasswordResetConfirmView(APIView):
         user.set_password(new_password)
         user.save()
         return Response({"detail": "Mật khẩu đã được đặt lại thành công."})
+
+@extend_schema(tags=["Auth"])
+class GoogleAuthCallbackView(APIView):
+    def get(self, request):
+        code = request.GET.get("code")
+        if not code:
+            return Response({"error": "Code not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+
+        token_resp = requests.post(token_url, data=data).json()
+        id_token = token_resp.get("id_token")
+
+        if not id_token:
+            return Response({"error": "Failed to obtain id_token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # verify id_token
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as grequests
+
+        try:
+            idinfo = google_id_token.verify_oauth2_token(
+                id_token, grequests.Request(), settings.GOOGLE_CLIENT_ID
+            )
+            email = idinfo.get("email")
+            name = idinfo.get("name", "")
+
+            if not email:
+                return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user, _ = User.objects.get_or_create(
+                username=email,
+                defaults={"email": email, "first_name": name}
+            )
+
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.first_name,
+                }
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@extend_schema(tags=["Auth"])
+class GoogleAuthInitView(APIView):
+    def get(self, request):
+        google_auth_url = (
+            "https://accounts.google.com/o/oauth2/v2/auth"
+            f"?client_id={settings.GOOGLE_CLIENT_ID}"
+            f"&redirect_uri={settings.GOOGLE_REDIRECT_URI}"
+            "&response_type=code"
+            "&scope=openid%20email%20profile"
+            "&access_type=offline"
+            "&prompt=consent"
+        )
+        print(google_auth_url)
+        return redirect(google_auth_url)
