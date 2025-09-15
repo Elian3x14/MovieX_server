@@ -187,6 +187,11 @@ class PasswordResetConfirmView(APIView):
 
 @extend_schema(tags=["Auth"])
 class GoogleAuthCallbackView(APIView):
+    # TODO: GG gọi client callback
+    # client gọi lại endpoint này với code
+    # endpoint này gọi gg lấy token
+    # endpoint này trả token về client
+    # client lưu token và gọi api với token 
     def get(self, request):
         code = request.GET.get("code")
         if not code:
