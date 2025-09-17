@@ -11,8 +11,10 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.shortcuts import redirect
 import requests
+
+# Verify id_token
+from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as grequests
-from google.oauth2 import id_token
 
 from ..serializers import (
     RegisterSerializer,
@@ -21,7 +23,7 @@ from ..serializers import (
     ChangePasswordSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
-    )
+)
 from ..models import User
 from ..utils.send_mail import send_templated_email
 
@@ -147,11 +149,11 @@ class PasswordResetRequestView(APIView):
             subject="Đặt lại mật khẩu",
             to_email=user.email,
             template_name="emails/reset_password_email.html",
-                context={
-                    "username": user.get_full_name() or user.username,
-                    "reset_link": reset_url,
-                },
-            from_email="noreply@example.com"
+            context={
+                "username": user.get_full_name() or user.username,
+                "reset_link": reset_url,
+            },
+            from_email="noreply@example.com",
         )
 
         return Response({"detail": "Đã gửi mail xác thực đặt lại mật khẩu."})
@@ -185,17 +187,13 @@ class PasswordResetConfirmView(APIView):
         user.save()
         return Response({"detail": "Mật khẩu đã được đặt lại thành công."})
 
-@extend_schema(tags=["Auth"])
+
+@ extend_schema(tags=["Auth"])
 class GoogleAuthCallbackView(APIView):
-    # TODO: GG gọi client callback
-    # client gọi lại endpoint này với code
-    # endpoint này gọi gg lấy token
-    # endpoint này trả token về client
-    # client lưu token và gọi api với token 
     def get(self, request):
         code = request.GET.get("code")
         if not code:
-            return Response({"error": "Code not provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Code not provided"}, status=400)
 
         token_url = "https://oauth2.googleapis.com/token"
         data = {
@@ -210,41 +208,27 @@ class GoogleAuthCallbackView(APIView):
         id_token = token_resp.get("id_token")
 
         if not id_token:
-            return Response({"error": "Failed to obtain id_token"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # verify id_token
-        from google.oauth2 import id_token as google_id_token
-        from google.auth.transport import requests as grequests
-
-        try:
-            idinfo = google_id_token.verify_oauth2_token(
-                id_token, grequests.Request(), settings.GOOGLE_CLIENT_ID
-            )
-            email = idinfo.get("email")
-            name = idinfo.get("name", "")
-
-            if not email:
-                return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
-
-            user, _ = User.objects.get_or_create(
-                username=email,
-                defaults={"email": email, "first_name": name}
+            return Response(
+                {"error": "Failed to obtain id_token", "detail": token_resp}, status=400
             )
 
-            refresh = RefreshToken.for_user(user)
+        idinfo = google_id_token.verify_oauth2_token(
+            id_token, grequests.Request(), settings.GOOGLE_CLIENT_ID
+        )
+        email = idinfo.get("email")
+        name = idinfo.get("name", "")
+        picture = idinfo.get("picture", "")
 
-            return Response({
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "name": user.first_name,
-                }
-            })
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+        user, _ = User.objects.get_or_create(
+            username=email, defaults={"email": email, "first_name": name}
+        )
+
+        refresh = RefreshToken.for_user(user)
+        # TODO: xử lý trả token qua cookie, không để lộ trên URL
+        # Sau khi tạo token -> redirect lại client kèm JWT
+        frontend_redirect = f"{settings.FRONTEND_URL}/google-success?access={refresh.access_token}&refresh={refresh}&name={name}&avatar={picture}"
+        return redirect(frontend_redirect)
+
 
 @extend_schema(tags=["Auth"])
 class GoogleAuthInitView(APIView):
