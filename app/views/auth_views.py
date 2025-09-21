@@ -11,6 +11,9 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.shortcuts import redirect
 import requests
+import uuid
+from django.core.cache import cache
+
 
 # Verify id_token
 from google.oauth2 import id_token as google_id_token
@@ -188,7 +191,7 @@ class PasswordResetConfirmView(APIView):
         return Response({"detail": "Mật khẩu đã được đặt lại thành công."})
 
 
-@ extend_schema(tags=["Auth"])
+@extend_schema(tags=["Auth"])
 class GoogleAuthCallbackView(APIView):
     def get(self, request):
         code = request.GET.get("code")
@@ -217,17 +220,64 @@ class GoogleAuthCallbackView(APIView):
         )
         email = idinfo.get("email")
         name = idinfo.get("name", "")
+        given_name = idinfo.get("given_name", "")
+        family_name = idinfo.get("family_name", "")
         picture = idinfo.get("picture", "")
+        locale = idinfo.get("locale", "")
+        hd = idinfo.get("hd", "")
 
         user, _ = User.objects.get_or_create(
-            username=email, defaults={"email": email, "first_name": name}
+            username=email,
+            defaults={
+                "email": email,
+                "first_name": name,
+                "is_active": True, # Đăng nhập qua Google thì khỏi xác thực email
+                "role": "user",
+                "password": User.objects.make_random_password(),
+                "last_name": family_name,
+                "phone_number": "", # Không có số điện thoại, có thể yêu cầu người dùng bổ sung sau
+                # "avatar": picture, # TODO: thêm trường avatar nếu cần
+            },
         )
 
         refresh = RefreshToken.for_user(user)
-        # TODO: xử lý trả token qua cookie, không để lộ trên URL
-        # Sau khi tạo token -> redirect lại client kèm JWT
-        frontend_redirect = f"{settings.FRONTEND_URL}/google-success?access={refresh.access_token}&refresh={refresh}&name={name}&avatar={picture}"
+
+        # Tạo one-time code
+        one_time_code = str(uuid.uuid4())
+        cache.set(
+            f"google_login:{one_time_code}",
+            {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "name": name,
+                "avatar": picture,
+            },
+            timeout=60,  # hết hạn sau 60 giây
+        )
+
+        # Redirect về frontend chỉ với code
+        frontend_redirect = (
+            f"{settings.FRONTEND_URL}/google-success?code={one_time_code}"
+        )
         return redirect(frontend_redirect)
+
+
+class ExchangeCodeView(APIView):
+    def post(self, request):
+        one_time_code = request.data.get("code")
+        if not one_time_code:
+            return Response({"error": "Code not provided"}, status=400)
+
+        cache_key = f"google_login:{one_time_code}"
+        data = cache.get(cache_key)
+
+        if not data:
+            return Response({"error": "Invalid or expired code"}, status=400)
+
+        # Xóa để đảm bảo code chỉ dùng 1 lần
+        cache.delete(cache_key)
+
+        return Response(data, status=200)
 
 
 @extend_schema(tags=["Auth"])

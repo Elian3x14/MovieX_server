@@ -24,8 +24,10 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("password-reset/", PasswordResetRequestView.as_view()),
     path("password-reset-confirm/", PasswordResetConfirmView.as_view()),
+    # login with google
     path("auth/google/login/", GoogleAuthInitView.as_view(), name="google-login"),
     path("auth/google/callback/", GoogleAuthCallbackView.as_view(), name="google-callback"),
+    path("auth/google/exchange/", ExchangeCodeView.as_view(), name="google-exchange"),
     #
     path("movies/<int:movie_id>/showtimes/", ShowtimeListView.as_view()),
     path(

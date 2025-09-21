@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MovieX Documentation</title>
+    <!-- <script src="/static/scripts.js" defer></script> -->
+    <!-- <link rel="icon" href="/static/favicon.ico" /> -->
+    <meta
+      name="description"
+      content="Comprehensive documentation for MovieX, the ultimate movie database application."
+    />
+    <meta
+      name="keywords"
+      content="MovieX, movie database, documentation, API, guide"
+    />
+    <meta name="author" content="MovieX Team" />
+    <meta property="og:title" content="MovieX Documentation" />
+    <meta
+      property="og:description"
+      content="Comprehensive documentation for MovieX, the ultimate movie database application."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://moviexample.com/doc" />
+    <meta
+      property="og:image"
+      content="https://moviexample.com/static/og-image.png"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #fafafa;
+        padding-top: 70px; /* tránh header che */
+      }
+
+      /* Header */
+      header {
+        background: #111827;
+        color: #fff;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+      }
+
+      header h1 {
+        font-size: 1.2rem;
+        font-weight: bold;
+      }
+
+      nav ul {
+        list-style: none;
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      nav a {
+        color: #f9fafb;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s;
+      }
+
+      nav a:hover {
+        color: #60a5fa;
+      }
+
+      /* Main content */
+      main {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+
+      section {
+        margin-bottom: 2.5rem;
+        padding: 1.5rem;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      h2 {
+        color: #111827;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+      }
+
+      h3 {
+        margin-top: 1rem;
+        color: #374151;
+      }
+
+      p,
+      li {
+        margin: 0.5rem 0;
+      }
+
+      /* List styles */
+      ol,
+      ul {
+        margin-left: 1.5rem;
+      }
+
+      ul li strong {
+        color: #2563eb;
+      }
+
+      /* Footer */
+      footer {
+        text-align: center;
+        padding: 1.5rem;
+        background: #111827;
+        color: #9ca3af;
+        margin-top: 3rem;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>MovieX Documentation</h1>
+      <nav>
+        <ul>
+          <li><a href="/doc">Home</a></li>
+          <li><a href="/doc/getting-started">Getting Started</a></li>
+          <li><a href="/doc/api">API Reference</a></li>
+          <li><a href="/doc/faq">FAQ</a></li>
+          <li><a href="/doc/contact">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <section id="introduction">
+        <h2>Introduction</h2>
+        <p>
+          Welcome to the MovieX documentation! This guide will help you get
+          started with using MovieX, a powerful movie database application that
+          allows you to search, filter, and manage your movie collection with
+          ease.
+        </p>
+      </section>
+
+      <section id="getting-started">
+        <h2>Getting Started</h2>
+        <p>To begin using MovieX, follow these steps:</p>
+        <ol>
+          <li>Install the application from our official website.</li>
+          <li>Create an account to access all features.</li>
+          <li>
+            Import your existing movie collection or start adding new movies.
+          </li>
+        </ol>
+      </section>
+
+      <section id="api-reference">
+        <h2>API Reference</h2>
+        <p>
+          MovieX provides a robust API for developers. Below are some of the key
+          endpoints:
+        </p>
+        <ul>
+          <li>
+            <strong>GET /movies</strong>: Retrieve a list of all movies in the
+            database.
+          </li>
+          <li>
+            <strong>POST /movies</strong>: Add a new movie to the database.
+          </li>
+          <li>
+            <strong>GET /movies/{id}</strong>: Retrieve details of a specific
+            movie by its ID.
+          </li>
+          <li>
+            <strong>PUT /movies/{id}</strong>: Update information for a specific
+            movie.
+          </li>
+          <li>
+            <strong>DELETE /movies/{id}</strong>: Remove a movie from the
+            database.
+          </li>
+        </ul>
+      </section>
+
+      <section id="faq">
+        <h2>Frequently Asked Questions (FAQ)</h2>
+        <h3>How do I reset my password?</h3>
+        <p>
+          You can reset your password by clicking on the "Forgot Password" link
+          on the login page and following the instructions.
+        </p>
+        <h3>Can I import movies from other databases?</h3>
+        <p>
+          Yes, MovieX supports importing movies from various formats including
+          CSV and JSON.
+        </p>
+      </section>
+      <section id="contact">
+        <h2>Contact Us</h2>
+        <p>
+          If you have any questions or need further assistance, please reach out
+          to our support team at
+          <a href="mailto:support@moviexample.com">support@moviexample.com</a>.
+        </p>
+      </section>
+    </main>
+    <footer>
+      <p>&copy; 2024 MovieX Team. All rights reserved.</p>
+    </footer>
+  </body>
+</html>
