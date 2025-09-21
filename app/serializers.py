@@ -10,6 +10,7 @@ from django.utils.encoding import force_bytes
 from django.urls import reverse
 from django.conf import settings
 from django.core.mail import send_mail
+from rest_framework.validators import UniqueValidator
 
 from .utils.send_mail import send_templated_email
 from .models import *
@@ -35,8 +36,21 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
-        required=True, validators=[UniqueValidator(queryset=User.objects.all())]
+        required=True,
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(), message="Email này đã được đăng ký"
+            )
+        ],
     )
+    phone_number = serializers.CharField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(), message="Số điện thoại này đã được đăng ký"
+            )
+        ]
+    )
+
     password = serializers.CharField(write_only=True)
 
     class Meta:
