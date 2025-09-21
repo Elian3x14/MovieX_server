@@ -3,9 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
-from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
 
 from .regexs import vietnam_phone_regex
 
@@ -20,6 +17,7 @@ class User(AbstractUser):
         unique=True,
         validators=[vietnam_phone_regex],
         verbose_name=_("phone number"),
+        null=True,
     )
 
     email = models.EmailField(unique=True)
@@ -166,9 +164,8 @@ class SeatType(models.Model):
     short_name = models.CharField(
         max_length=10, null=True, default=""
     )  # VD: VIP, STD, COUPLE
-    color = models.CharField(
-        max_length=7, default="#FFFFFF"
-    )  # Mã màu HEX cho ghế
+    color = models.CharField(max_length=7, default="#FFFFFF")  # Mã màu HEX cho ghế
+
     def __str__(self):
         return self.name
 
@@ -209,10 +206,11 @@ class Showtime(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name="showtimes")
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="showtimes")
     start_time = models.DateTimeField()
-    end_time = models.DateTimeField() # Tính toán từ start_time và duration của movie
+    end_time = models.DateTimeField()  # Tính toán từ start_time và duration của movie
 
     def __str__(self):
         return f"{self.movie.title} - {self.room.name} - {self.start_time.strftime('%Y-%m-%d %H:%M')}"
+
 
 class BookingStatus(models.TextChoices):
     # Đang giữ ghế, khi người dùng đặt vé,
@@ -223,14 +221,14 @@ class BookingStatus(models.TextChoices):
     # và hệ thống đã giữ ghế trong một khoảng thời gian nhất định
     PENDING_TO_PAY = "pending_to_pay", "Pending to Pay"
     # Trạng thái khi người dùng đã thanh toán thành công
-    # và hệ thống đã xác nhận thanh toán 
+    # và hệ thống đã xác nhận thanh toán
     PAID = "paid", "Paid"
     # Trạng thái khi người dùng đã sử dụng vé (đã xem phim)
     USED = "used", "Used"
     # Trạng thái khi người dùng đã hủy vé đã đặt
-    # và hệ thống đã hoàn tiền (nếu có) 
+    # và hệ thống đã hoàn tiền (nếu có)
     CANCELLED = "cancelled", "Cancelled"
-    
+
 
 class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -252,11 +250,13 @@ class Booking(models.Model):
     def __str__(self):
         return f"Booking {self.id} - {self.user.email} - {self.showtime.movie.title} - {self.booking_time.strftime('%Y-%m-%d %H:%M')}"
 
+
 class BookingSeat(models.Model):
     """
     Chi tiết ghế được đặt trong một Booking
     Tương tự như OrderDetail (n-1) Order trong thương mại điện tử
     """
+
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name="booking_seats"
     )
