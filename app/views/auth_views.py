@@ -12,6 +12,7 @@ from django.conf import settings
 from django.shortcuts import redirect
 import requests
 import uuid
+from django.contrib.auth.hashers import make_password
 from django.core.cache import cache
 
 
@@ -233,7 +234,7 @@ class GoogleAuthCallbackView(APIView):
                 "first_name": name,
                 "is_active": True, # Đăng nhập qua Google thì khỏi xác thực email
                 "role": "user",
-                "password": User.objects.make_random_password(),
+                "password": make_password(None),
                 "last_name": family_name,
                 "phone_number": "", # Không có số điện thoại, có thể yêu cầu người dùng bổ sung sau
                 # "avatar": picture, # TODO: thêm trường avatar nếu cần
@@ -265,12 +266,17 @@ class GoogleAuthCallbackView(APIView):
 class ExchangeCodeView(APIView):
     def post(self, request):
         one_time_code = request.data.get("code")
+        print("Received one-time code:", one_time_code)
         if not one_time_code:
             return Response({"error": "Code not provided"}, status=400)
 
+        print("Looking up code in cache:", one_time_code)
+
         cache_key = f"google_login:{one_time_code}"
         data = cache.get(cache_key)
-
+        print("Constructed cache key:", cache_key)
+        print("Cache contents:", cache._cache)  # Debug: in nội dung cache hiện tại
+        print("Cache lookup result:", data)
         if not data:
             return Response({"error": "Invalid or expired code"}, status=400)
 
